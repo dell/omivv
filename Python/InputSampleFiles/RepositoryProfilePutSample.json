@@ -1,0 +1,15 @@
+{
+	"id": "1010",
+	"put_body": {
+		"name":"LocalOnelineCatalog4",
+		"description": "LocalOnlineCatalog4Changed",
+		"protocolType": "CIFS",
+		"uri": "\\\\xx.xx.xx.xx\\ShareFolder\\Catalog.xml",
+		"credential": {
+			"username": "ABC", 
+			"domain": "", 
+			"password": "XYZ"
+		},
+		"synchronizeRepository": false
+	}
+}

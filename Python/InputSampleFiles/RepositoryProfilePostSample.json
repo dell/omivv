@@ -1,0 +1,13 @@
+{
+	"name":"LocalOnelineCatalog4",
+	"description": "LocalOnlineCatalog4",
+	"globalDefault": "false",
+	"repoType": "FIRMWARE",
+	"protocolType": "CIFS",
+	"uri": "\\\\xx.xx.xx.xx\\Sharelocation\\CatalogfileName.xml",
+	"credential": {
+		"username": "ABC", 
+		"domain": "", 
+		"password": "XYZ"
+	}
+}
