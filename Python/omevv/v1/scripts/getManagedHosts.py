@@ -13,10 +13,12 @@ from omevv_apis_client.types import Response
 
 class ManageHostWrapper:
     def __init__(self, base_url, vcUsercredential, vCenterUUID):
-        token = 'Basic %s' % base64.b64encode(vcUsercredential.username + ":" + vcUsercredential.password)
+        credential = vcUsercredential.username + ":" + vcUsercredential.password
+        basicAuth = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
         headers = {constants.vcGuidHeader: vCenterUUID}
+        headers["Authorization"] = basicAuth
         self.uuid = vCenterUUID
-        self.client = AuthenticatedClient(base_url=base_url, token=token, verify_ssl=False). \
+        self.client = AuthenticatedClient(base_url=base_url, token=None, verify_ssl=False). \
             with_headers(headers=headers). \
             with_timeout(constants.generalTimeOut_sec)
 
