@@ -15,7 +15,7 @@ https://dl.dell.com/content/manual179056-migrating-from-omivv-to-omevv.pdf?langu
 
 ## OMEVVP REST API with OPENAPI based Scripting Library
 
-This GitHub library contains example Python and PowerShell scripts that illustrate the usage of the iDRAC REST API with Redfish to perform the following actions:
+This GitHub library contains example Python scripts that illustrate the usage of the OMEVVP REST API to perform the following actions:
 
 vCenter operations
 *	Register OMEVVP with vCenter (Webclient and PHA)
