@@ -6,6 +6,9 @@ This repository hosts cookbooks for OMIVV restful APIs.
 
 * **Prasad Rao**
 * **Prakash Ranjan**
+* **Ramya R**
+* **Shuvaday Chatterjee**
+* **Kristian Lamb**
 
 ## License
 
