@@ -60,7 +60,7 @@ if __name__ == "__main__":
     PARSER.add_argument("--compliance_filter", "-g", required=True, default=None, help="compliance_filter")
     ARGS = PARSER.parse_args()
 
-    if ARGS.ip is not None and ARGS is not None and ARGS.vcpassword is not None and ARGS.vcUUID is not None and ARGS.compliance_filter is not None:
+    if ARGS.ip is not None and ARGS.vcusername is not None and ARGS.vcpassword is not None and ARGS.vcUUID is not None and ARGS.compliance_filter is not None:
         base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
         credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
         output=HostManagementComplianceWrapper(base_url=base_url, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, compliance_filter=ARGS.compliance_filter).get_managed_hosts_compliance()
