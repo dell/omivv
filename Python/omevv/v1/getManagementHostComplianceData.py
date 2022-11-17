@@ -68,11 +68,13 @@ if __name__ == "__main__":
         book = xlwt.Workbook()
         sheet1 = book.add_sheet('sheet1', cell_overwrite_ok=True)
         
-        column_count=0;
+        column_count = 0;
+        data_present = False;
         HostManagementComplianceWrapper(base_url=base_url, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, compliance_filter=ARGS.compliance_filter).populate_headers(column_count)  
         column_count = column_count + 1;
         for row_num,x in enumerate(output):
             if ARGS.compliance_filter == x.state:
+                data_present = True;
                 sheet1.write(column_count, 0, x.hostid)
                 sheet1.write(column_count, 1, x.host_name)
                 sheet1.write(column_count, 2, x.model)
@@ -108,6 +110,9 @@ if __name__ == "__main__":
 
             name = "export.xls"
             book.save(name)
+
+        if data_present == False:
+            print("There are no " +ARGS.compliance_filter+" hosts")
 
     else:
         print("Required parameters missing. Please review module help.")
