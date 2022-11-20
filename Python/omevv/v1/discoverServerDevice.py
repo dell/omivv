@@ -1,21 +1,23 @@
 from typing import Any, Dict, List, Optional, Union
 import argparse
+import warnings
 from omevv_apis_client import AuthenticatedClient
-#from omevv_apis_client.api.console_compliance_and_discovery import get_host_compliance
-#from omevv_apis_client.models import ManagedHost
-#from omevv_apis_client.models import HostCompliance
+import sys
+import requests, json
 from omevv_apis_client.models import ErrorObject
 from omevv_apis_client.models import Credential
 import constants
 import base64
 from omevv_apis_client.types import Response
+warnings.filterwarnings("ignore")
 
 class HostDiscoveryWrapper:
     def __init__(self, base_url, omeIp, vcUsercredential, vCenterUUID, payload, jobname, jobdescription, console_entity_id, device_username, device_password):
         credential = vcUsercredential.username + ":" + vcUsercredential.password
         basicAuth = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
-        headers = {constants.vcGuidHeader: vCenterUUID}
-        headers["Authorization"] = basicAuth
+        self.headers = {constants.vcGuidHeader: vCenterUUID}
+        self.headers["Authorization"] = basicAuth
+        self.headers["Content-Type"] = 'application/json'
         self.omeIp = omeIp
         self.uuid = vCenterUUID
         self.payload = payload
@@ -25,7 +27,7 @@ class HostDiscoveryWrapper:
         self.device_username = device_username
         self.device_password = device_password
         self.client = AuthenticatedClient(base_url=base_url, token=None, verify_ssl=False). \
-            with_headers(headers=headers). \
+            with_headers(headers=self.headers). \
             with_timeout(constants.generalTimeOut_sec)
 
     def get_managed_hosts_compliance(self):
@@ -42,10 +44,10 @@ class HostDiscoveryWrapper:
         hostDiscoveryGroupPayload = []
         hostDiscoveryGroupPayload.append(
             {
-                "consoleEntityIDs": [self.console_entity_id],
-                "userName": self.device_username,
-                "password": self.device_password,
-                "useGlobalCredentials": True            
+                "consoleEntityIDs": ['%s'%(self.console_entity_id)],
+                "userName": '%s'%(self.device_username),
+                "passWord": self.device_password,
+                "useGlobalCredentials": False            
             }
         )
 
@@ -54,15 +56,21 @@ class HostDiscoveryWrapper:
 
     def run_discovery(self):
         global retry
-        retry = 3
+        retry = 0
         headers = self.headers
-        url = 'https://{ip}/omevv/GatewayService/v1/Consoles/'+self.uuid+'/Hosts/Discover'.format(ip = self.omeIp)
+        url = 'https://%s/omevv/GatewayService/v1/Consoles/%s/Hosts/Discover'%(self.omeIp, self.uuid)
+        print(url)
+        print(self.payload)
         try:
             response = requests.post(url, data=json.dumps(self.payload), headers=headers, verify=False);
             data = response.json();
             status_code = response.status_code
-            if status_code == 200:
-              return "Discovery job is created successfully with id "+ str(data);
+            if status_code == 202:
+              return "Discovery job is created successfully with id "+ str(data)
+            elif status_code == 400:
+                return "Error occured while creating discovery job 400: "+ str(data)
+            elif status_code == 500:
+                return "Error occured while creating discovery job : "+ str(data)
             else:
                 raise Exception("Error occured while creating discovery job ",data);
         except Exception as e:
@@ -87,18 +95,18 @@ if __name__ == "__main__":
     PARSER.add_argument("--vcUUID", "-d", required=True, default=None,
                         help="UUID of the relevant vCenter")
     PARSER.add_argument("--jobname", "-g", required=True, default=None, help="job name")
-    PARSER.add_argument("--jobdescription", "-g", required=True, default=None, help="job description")
-    PARSER.add_argument("--console_entity_id", "-g", required=True, default=None, help="console entity id of the server device")
-    PARSER.add_argument("--device_username", "-g", required=True, default=None, help="username of device")
-    PARSER.add_argument("--device_password", "-g", required=True, default=None, help="password of device")
+    PARSER.add_argument("--jobdescription", required=True, default=None, help="job description")
+    PARSER.add_argument("--console_entity_id", required=True, default=None, help="console entity id of the server device")
+    PARSER.add_argument("--device_username", required=True, default=None, help="username of device")
+    PARSER.add_argument("--device_password", required=True, default=None, help="password of device")
 
     ARGS = PARSER.parse_args()
 
-    if ARGS.ip is not None and ARGS.vcusername is not None and ARGS.vcpassword is not None and ARGS.vcUUID is not None and ARGS.compliance_filter is not None:
+    if ARGS.ip is not None and ARGS.vcusername is not None and ARGS.vcpassword is not None and ARGS.vcUUID is not None and ARGS.jobname is not None:
         base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
         credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
         payload = {}
         output=HostDiscoveryWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, console_entity_id=ARGS.console_entity_id, device_username=ARGS.device_username, device_password=ARGS.device_password).create_payload()
-        
+        print(HostDiscoveryWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, console_entity_id=ARGS.console_entity_id, device_username=ARGS.device_username, device_password=ARGS.device_password).run_discovery())
     else:
         print("Required parameters missing. Please review module help.")
