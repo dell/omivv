@@ -8,8 +8,10 @@ from omevv_apis_client.models import ErrorObject
 from omevv_apis_client.models import Credential
 import constants
 import base64
+import time
 from omevv_apis_client.types import Response
 warnings.filterwarnings("ignore")
+retry = 3
 
 class HostDiscoveryWrapper:
     def __init__(self, base_url, omeIp, vcUsercredential, vCenterUUID, payload, jobname, jobdescription, console_entity_id, device_username, device_password, use_global_creds):
@@ -52,7 +54,6 @@ class HostDiscoveryWrapper:
 
     def run_discovery(self):
         global retry
-        retry = 3
         headers = self.headers
         url = 'https://%s/omevv/GatewayService/v1/Consoles/%s/Hosts/Discover'%(self.omeIp, self.uuid)
         try:
@@ -61,7 +62,7 @@ class HostDiscoveryWrapper:
             status_code = response.status_code
             if status_code == 202:
               return "Discovery job is created successfully with id "+ str(data)
-            elif status_code == 400 or status_code == 500:
+            elif status_code == 400 or status_code == 500 or status_code == 404:
                 return "Error occured while creating discovery job : "+ str(data)
             else:
                 raise Exception("Error occured while creating discovery job ",data);
