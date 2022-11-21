@@ -100,7 +100,7 @@ if __name__ == "__main__":
         base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
         credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
         payload = {}
-        output=HostDiscoveryWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, console_entity_id=ARGS.console_entity_id, device_username=ARGS.device_username, device_password=ARGS.device_password, use_global_creds=ARGS.use_global_creds).create_payload()
+        output = HostDiscoveryWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, console_entity_id=ARGS.console_entity_id, device_username=ARGS.device_username, device_password=ARGS.device_password, use_global_creds=ARGS.use_global_creds).create_payload()
         print(HostDiscoveryWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, console_entity_id=ARGS.console_entity_id, device_username=ARGS.device_username, device_password=ARGS.device_password, use_global_creds=ARGS.use_global_creds).run_discovery())
     else:
         print("Required parameters missing. Please review module help.")
