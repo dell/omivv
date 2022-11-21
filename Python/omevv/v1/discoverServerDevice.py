@@ -31,11 +31,6 @@ class HostDiscoveryWrapper:
             with_headers(headers=self.headers). \
             with_timeout(constants.generalTimeOut_sec)
 
-    def get_managed_hosts_compliance(self):
-        response: Response[Union[ErrorObject, List[HostCompliance]]] = \
-            get_host_compliance.sync_detailed(uuid=self.uuid, client=self.client)
-        return response.parsed
-
     def create_payload(self):
         if self.jobname:
             self.payload["jobName"] = self.jobname;
