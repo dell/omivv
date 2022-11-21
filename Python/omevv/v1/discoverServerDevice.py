@@ -87,7 +87,7 @@ if __name__ == "__main__":
     PARSER.add_argument("--vcUUID", "-d", required=True, default=None,
                         help="UUID of the relevant vCenter")
     PARSER.add_argument("--jobname", "-g", required=True, default=None, help="job name")
-    PARSER.add_argument("--jobdescription", required=True, default=None, help="job description")
+    PARSER.add_argument("--jobdescription", required=False, default=None, help="job description")
     PARSER.add_argument("--console_entity_id", required=True, default=None, help="console entity id of the server device")
     PARSER.add_argument("--device_username", required=True, default=None, help="username of device")
     PARSER.add_argument("--device_password", required=True, default=None, help="password of device")
@@ -95,7 +95,7 @@ if __name__ == "__main__":
 
     ARGS = PARSER.parse_args()
 
-    if ARGS.ip is not None and ARGS.vcusername is not None and ARGS.vcpassword is not None and ARGS.vcUUID is not None and ARGS.jobname is not None and ARGS.jobdescription is not None and ARGS.console_entity_id is not None and ARGS.device_username is not None and ARGS.device_password is not None and ARGS.use_global_creds is not None:
+    if ARGS.ip is not None and ARGS.vcusername is not None and ARGS.vcpassword is not None and ARGS.vcUUID is not None and ARGS.jobname is not None and ARGS.console_entity_id is not None and ARGS.device_username is not None and ARGS.device_password is not None and ARGS.use_global_creds is not None:
         base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
         credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
         payload = {}
