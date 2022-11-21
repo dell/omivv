@@ -8,8 +8,10 @@ from omevv_apis_client.models import ErrorObject
 from omevv_apis_client.models import Credential
 import constants
 import base64
+import time
 from omevv_apis_client.types import Response
 warnings.filterwarnings("ignore")
+retry = 3
 
 class HostsManagementWrapper:
     def __init__(self, base_url, omeIp, vcUsercredential, vCenterUUID, payload, jobname, jobdescription, host_ids):
@@ -38,7 +40,6 @@ class HostsManagementWrapper:
 
     def manage(self):
         global retry
-        retry = 3
         headers = self.headers
         url = 'https://%s/omevv/GatewayService/v1/Consoles/%s/Hosts/Manage'%(self.omeIp, self.uuid)
         try:
@@ -47,7 +48,7 @@ class HostsManagementWrapper:
             status_code = response.status_code
             if status_code == 202:
               return "Manage job is created successfully with id "+ str(data)
-            elif status_code == 400 or status_code == 500:
+            elif status_code == 400 or status_code == 500 or status_code == 404:
                 return "Error occured while creating manage job : "+ str(data)
             else:
                 raise Exception("Error occured while creating manage job ",data);
@@ -56,7 +57,7 @@ class HostsManagementWrapper:
             if retry > 0:
                 retry = retry - 1;
                 time.sleep(5);
-                manage();
+                self.manage();
 
             else:
                 print("Failed after 3 retries,exiting");
@@ -74,7 +75,7 @@ if __name__ == "__main__":
                         help="UUID of the relevant vCenter")
     PARSER.add_argument("--jobname", "-g", required=True, default=None, help="job name")
     PARSER.add_argument("--jobdescription", required=False, default=None, help="job description")
-    PARSER.add_argument("--host_ids", "--arg", nargs = '+', required=True, default=None, type = int, help="space separated list of host ids of the hosts to be managed by OMEVV")
+    PARSER.add_argument("--host_ids", "--arg", nargs = '+', required=True, default=None, type = int, help="space separated host ids of the hosts to be managed by OMEVV")
 
     ARGS = PARSER.parse_args()
 
