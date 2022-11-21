@@ -66,9 +66,7 @@ class HostDiscoveryWrapper:
             status_code = response.status_code
             if status_code == 202:
               return "Discovery job is created successfully with id "+ str(data)
-            elif status_code == 400:
-                return "Error occured while creating discovery job : "+ str(data)
-            elif status_code == 500:
+            elif status_code == 400 or status_code == 500:
                 return "Error occured while creating discovery job : "+ str(data)
             else:
                 raise Exception("Error occured while creating discovery job ",data);
