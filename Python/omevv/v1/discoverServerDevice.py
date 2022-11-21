@@ -71,7 +71,7 @@ class HostDiscoveryWrapper:
             if retry > 0:
                 retry = retry - 1;
                 time.sleep(5);
-                run_discovery();
+                self.run_discovery();
 
             else:
                 print("Failed after 3 retries,exiting");
