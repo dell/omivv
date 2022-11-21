@@ -8,6 +8,7 @@ from omevv_apis_client.models import ErrorObject
 from omevv_apis_client.models import Credential
 import constants
 import base64
+import time
 from omevv_apis_client.types import Response
 warnings.filterwarnings("ignore")
 retry = 3
@@ -56,7 +57,7 @@ class UnmanageHostsWrapper:
             if retry > 0:
                 retry = retry - 1;
                 time.sleep(5);
-                manage();
+                self.unmanage();
 
             else:
                 print("Failed after 3 retries,exiting");
