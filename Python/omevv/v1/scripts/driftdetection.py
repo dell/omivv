@@ -89,7 +89,8 @@ if __name__ == "__main__":
             base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
             credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
             payload = {}
-            output = ModifyDriftDetectionScheduleWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, baseline_profile_id=ARGS.baseline_profile_id, monday=ARGS.monday, tuesday=ARGS.tuesday, wednesday=ARGS.wednesday, thursday=ARGS.thursday, friday=ARGS.friday, saturday=ARGS.saturday, sunday=ARGS.sunday, time=ARGS.time).create_payload()
-            print(ModifyDriftDetectionScheduleWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, baseline_profile_id=ARGS.baseline_profile_id, monday=ARGS.monday, tuesday=ARGS.tuesday, wednesday=ARGS.wednesday, thursday=ARGS.thursday, friday=ARGS.friday, saturday=ARGS.saturday, sunday=ARGS.sunday, time=ARGS.time).modifyDriftDetectionSchedule())
+            driftdetectionhelper = ModifyDriftDetectionScheduleWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, baseline_profile_id=ARGS.baseline_profile_id, monday=ARGS.monday, tuesday=ARGS.tuesday, wednesday=ARGS.wednesday, thursday=ARGS.thursday, friday=ARGS.friday, saturday=ARGS.saturday, sunday=ARGS.sunday, time=ARGS.time)
+            driftdetectionhelper..create_payload()
+            print(driftdetectionhelper.modifyDriftDetectionSchedule())
     else:
         print("Required parameters missing. Please review module help.")
