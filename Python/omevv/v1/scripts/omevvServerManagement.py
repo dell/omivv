@@ -1,16 +1,16 @@
 from typing import Any, Dict, List, Optional, Union
 import argparse
-import warnings
-from omevv_apis_client import AuthenticatedClient
 import sys
-import requests, json
-from omevv_apis_client.models import ErrorObject
-from omevv_apis_client.models import Credential
+import json
 import constants
 import base64
 import time
-from omevv_apis_client.types import Response
-warnings.filterwarnings("ignore")
+from omevv_apis_client import AuthenticatedClient
+from omevv_apis_client.models import Credential
+
+import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 retry = 3
 
 class HostsManagementWrapper:
@@ -83,9 +83,9 @@ if __name__ == "__main__":
         if type(ARGS.host_ids) == list:
             base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
             credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
-            payload = {}
-            output = HostsManagementWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, host_ids=ARGS.host_ids).create_payload()
-            print(HostsManagementWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, host_ids=ARGS.host_ids).manage())
+            hostmgmthelper = HostsManagementWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload={}, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, host_ids=ARGS.host_ids)
+            hostmgmthelper.create_payload()
+            print(hostmgmthelper.manage())
         else:
             print("Invalid input for host_ids") 
     else:
