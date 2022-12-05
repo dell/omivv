@@ -6,7 +6,10 @@ from omevv_apis_client.models import Credential
 import constants
 import base64
 from omevv_apis_client.types import Response
-warnings.filterwarnings("ignore")
+
+import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class ModifyDriftDetectionScheduleWrapper:
     def __init__(self, base_url, omeIp, vcUsercredential, vCenterUUID, payload, baseline_profile_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, time):
