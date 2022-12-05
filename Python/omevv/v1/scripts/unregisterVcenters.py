@@ -10,7 +10,10 @@ import base64
 import constants
 import time
 from omevv_apis_client.types import Response
-warnings.filterwarnings("ignore")
+
+import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class UnregisterVcenters:
     def __init__(self, base_url, omeIp, omeUsercredential, vCenterUUID, payload, extensions):
@@ -65,8 +68,9 @@ if __name__ == "__main__":
                 base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
                 credential = Credential(username=ARGS.omeusername[i], password=ARGS.omepassword[i])
                 payload = {}
-                output = UnregisterVcenters(base_url=base_url, omeIp=ARGS.ip, omeUsercredential=credential, vCenterUUID=ARGS.vcUUID[i], payload=payload, extensions=ARGS.extensions).create_payload()
-                print(UnregisterVcenters(base_url=base_url, omeIp=ARGS.ip, omeUsercredential=credential, vCenterUUID=ARGS.vcUUID[i], payload=payload, extensions=ARGS.extensions).unregisterVc())
+                unregistervcentershelper = UnregisterVcenters(base_url=base_url, omeIp=ARGS.ip, omeUsercredential=credential, vCenterUUID=ARGS.vcUUID[i], payload=payload, extensions=ARGS.extensions)
+                unregistervcentershelper.create_payload()
+                print(unregistervcentershelper.unregisterVc())
         else:
             print("Invalid input. Each input parameter should be a list") 
     else:
