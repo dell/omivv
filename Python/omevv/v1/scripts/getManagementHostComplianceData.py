@@ -11,6 +11,10 @@ import base64
 import xlwt
 from omevv_apis_client.types import Response
 
+import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
 class HostManagementComplianceWrapper:
     def __init__(self, base_url, vcUsercredential, vCenterUUID, compliance_filter):
         credential = vcUsercredential.username + ":" + vcUsercredential.password
