@@ -10,7 +10,10 @@ import constants
 import base64
 import time
 from omevv_apis_client.types import Response
-warnings.filterwarnings("ignore")
+
+import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 retry = 3
 
 class HostDiscoveryWrapper:
