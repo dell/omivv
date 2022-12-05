@@ -10,7 +10,10 @@ import constants
 import base64
 import time
 from omevv_apis_client.types import Response
-warnings.filterwarnings("ignore")
+
+import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 retry = 3
 
 class UnmanageHostsWrapper:
@@ -84,8 +87,9 @@ if __name__ == "__main__":
             base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
             credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
             payload = {}
-            output = UnmanageHostsWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, host_ids=ARGS.host_ids).create_payload()
-            print(UnmanageHostsWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, host_ids=ARGS.host_ids).unmanage())
+            unmanagehosthelper = UnmanageHostsWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, host_ids=ARGS.host_ids)
+            unmanagehosthelper.create_payload()
+            print(unmanagehosthelper.unmanage())
         else:
             print("Invalid input for host_ids") 
     else:
