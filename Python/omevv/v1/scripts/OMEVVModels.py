@@ -1,13 +1,13 @@
 from collections import namedtuple
 
-class Console:
+class OMEVVConsole:
     def __init__(self,id,href,objectType,hostname,ip):
         self.id,self.href,self.objectType,self.hostname,self.ip = id,href,objectType,hostname,ip
 
     def __iter__(self):
         return iter([self.id, self.objectType, self.hostname,self.ip])
 
-class RepoProfile:
+class OMEVVRepoProfile:
     def __init__(self,id,href,objectType,profileName,description,repoType):
         self.id,self.href,self.objectType,self.profileName,self.description,self.repoType = id,href,objectType,profileName,description,repoType
     def __iter__(self):
