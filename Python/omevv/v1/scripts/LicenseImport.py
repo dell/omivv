@@ -35,20 +35,12 @@ import base64
 
 
 class LicenseImport:
-    def __init__(self, idrac_ip, idrac_uname, idrac_pwd):
-        self.idrac_ip = idrac_ip
-        self.idrac_uname = idrac_uname
-        self.idrac_pwd = idrac_pwd
+    def __init__(self):
 
         self.headers = {'content-type': 'application/json'}
-        credential = idrac_uname + ":" + idrac_pwd
-        self.encoded_idrac_cred = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
-        self.headers["Authorization"] = self.encoded_idrac_cred
 
         self.job_id = ""
         self.licenseimporturl = "/redfish/v1/Managers/iDRAC.Embedded.1/Oem/Dell/DellLicenseManagementService/Actions/DellLicenseManagementService.ImportLicenseFromNetworkShare"
-        self.config_url = "https://" + self.idrac_ip
-        self.retry = 2
 
         self.payload = {}
 
@@ -114,9 +106,18 @@ class LicenseImport:
 
         return flag
 
-    def import_idrac_license_network_share(self, payload, retry=2):
+    def import_idrac_license_network_share(self,idrac_ip, idrac_uname, idrac_pwd,payload, retry=2):
         self.retry = retry
+        self.idrac_ip = idrac_ip
+        self.idrac_uname = idrac_uname
+        self.idrac_pwd = idrac_pwd
+        self.config_url = "https://" + self.idrac_ip
+
         try:
+            credential = idrac_uname + ":" + idrac_pwd
+            self.encoded_idrac_cred = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
+            self.headers["Authorization"] = self.encoded_idrac_cred
+
             method = "ImportLicenseFromNetworkShare"
 
             print("- Performing POST on %s " % (self.config_url + self.licenseimporturl))
@@ -151,7 +152,7 @@ class LicenseImport:
             if retry > 0:
                 retry = retry - 1
                 time.sleep(5)
-                self.import_idrac_license_network_share(payload, retry)
+                self.import_idrac_license_network_share(idrac_ip, idrac_uname, idrac_pwd,payload, retry)
             else:
                 print("- FAIL: Exception %s occured even after retrying %s times" % (e, self.retry))
                 return False
@@ -192,7 +193,7 @@ if __name__ == "__main__":
                         required=False, type=int)
     args = vars(parser.parse_args())
 
-    licenseobj = LicenseImport(idrac_ip=args["ip"], idrac_uname=args["u"], idrac_pwd=args["p"])
+    licenseobj = LicenseImport()
 
     payload = licenseobj.create_payload(licensename=args["licensefilename"], shareip=args["ipaddress"],
                                         sharetype=args["sharetype"],
@@ -200,7 +201,7 @@ if __name__ == "__main__":
                                         workgroup=args["workgroup"],
                                         ignorecertwarning=args["ignorecertwarning"], sharename=args["sharename"])
 
-    job_id = licenseobj.import_idrac_license_network_share(payload=payload, retry=args["retry"])
+    job_id = licenseobj.import_idrac_license_network_share(idrac_ip=args["ip"], idrac_uname=args["u"], idrac_pwd=args["p"],payload=payload, retry=args["retry"])
 
     if job_id:
         # call job func only if Job id is returned
