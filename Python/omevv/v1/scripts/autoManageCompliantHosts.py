@@ -32,15 +32,15 @@ def getDiscoveredHosts(ip, vcusername, vcpassword, vcuuid) -> Tuple[bool,dict]:
         return (False, {"Error": e})
 
 
-def getCompliantHostIds(discovered_hosts) -> Tuple[bool,list]:
-    compliant_hosts = []
+def getValidHostIds(discovered_hosts) -> Tuple[bool,list]:
+    valid_hosts = []
     for i in discovered_hosts:
-        if i["state"] == "COMPLIANT":
-            compliant_hosts.append(i["hostid"])
-    if compliant_hosts:
-        return (True, compliant_hosts)
+        if i["state"] in ["COMPLIANT","NONCOMPLIANT"]:
+            valid_hosts.append(i["hostid"])
+    if valid_hosts:
+        return (True, valid_hosts)
     else:
-        return (False, compliant_hosts)
+        return (False, valid_hosts)
 
 
 if __name__ == "__main__":
@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     success,response = getDiscoveredHosts(ARGS.ip, ARGS.vcusername, ARGS.vcpassword, ARGS.vcUUID)
     if success and response:
-        success,host_ids = getCompliantHostIds(response)
+        success,host_ids = getValidHostIds(response)
         if success:
             base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
             credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
@@ -68,7 +68,7 @@ if __name__ == "__main__":
             hostmgmthelper.create_payload()
             print(hostmgmthelper.manage())
         else:
-            print("SUCESS: No Discovered Hosts matching COMPLIANT state.")
+            print("SUCESS: No Discovered Hosts available to be Managed. Please see Management Compliance State for Reason.")
     elif success and len(response) == 0:
         print("SUCCESS: No Unmanaged Hosts")
     else:
