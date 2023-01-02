@@ -17,13 +17,14 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class UnregisterVcenters:
     def __init__(self):
-        self.headers["Content-Type"] = 'application/json'
+        pass
 
     def create_payload(self, base_url, omeIp, omeUsercredential, vCenterUUID, payload, extensions):
         credential = omeUsercredential.username + ":" + omeUsercredential.password
         basicAuth = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
         self.headers = {}
         self.headers["Authorization"] = basicAuth
+        self.headers["Content-Type"] = 'application/json'
         self.omeIp = omeIp
         self.uuid = vCenterUUID
         self.payload = payload
