@@ -17,12 +17,14 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 retry = 3
 
 class UnmanageHostsWrapper:
-    def __init__(self, base_url, omeIp, vcUsercredential, vCenterUUID, payload, jobname, jobdescription, host_ids):
+    def __init__(self):
+        self.headers["Content-Type"] = 'application/json'
+
+    def create_payload(self, base_url, omeIp, vcUsercredential, vCenterUUID, payload, jobname, jobdescription, host_ids):
         credential = vcUsercredential.username + ":" + vcUsercredential.password
         basicAuth = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
         self.headers = {constants.vcGuidHeader: vCenterUUID}
         self.headers["Authorization"] = basicAuth
-        self.headers["Content-Type"] = 'application/json'
         self.omeIp = omeIp
         self.uuid = vCenterUUID
         self.payload = payload
@@ -33,7 +35,6 @@ class UnmanageHostsWrapper:
             with_headers(headers=self.headers). \
             with_timeout(constants.generalTimeOut_sec)
 
-    def create_payload(self):
         if self.host_ids:
             self.payload["hostIDs"] = self.host_ids
         if self.jobname:
@@ -50,7 +51,7 @@ class UnmanageHostsWrapper:
             data = response.json();
             status_code = response.status_code
             if status_code == 202:
-              return "Manage job is created successfully with id "+ str(data)
+              return "Unmanage job is created successfully with id "+ str(data)
             elif status_code == 400 or status_code == 500 or status_code == 404:
                 return "Error occured while unmanaging : "+ str(data)
             else:
@@ -87,8 +88,8 @@ if __name__ == "__main__":
             base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
             credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
             payload = {}
-            unmanagehosthelper = UnmanageHostsWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, host_ids=ARGS.host_ids)
-            unmanagehosthelper.create_payload()
+            unmanagehosthelper = UnmanageHostsWrapper()
+            unmanagehosthelper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, host_ids=ARGS.host_ids)
             print(unmanagehosthelper.unmanage())
         else:
             print("Invalid input for host_ids") 
