@@ -16,12 +16,14 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class UnregisterVcenters:
-    def __init__(self, base_url, omeIp, omeUsercredential, vCenterUUID, payload, extensions):
+    def __init__(self):
+        self.headers["Content-Type"] = 'application/json'
+
+    def create_payload(self, base_url, omeIp, omeUsercredential, vCenterUUID, payload, extensions):
         credential = omeUsercredential.username + ":" + omeUsercredential.password
         basicAuth = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
         self.headers = {}
         self.headers["Authorization"] = basicAuth
-        self.headers["Content-Type"] = 'application/json'
         self.omeIp = omeIp
         self.uuid = vCenterUUID
         self.payload = payload
@@ -30,7 +32,6 @@ class UnregisterVcenters:
             with_headers(headers=self.headers). \
             with_timeout(constants.generalTimeOut_sec)
 
-    def create_payload(self):
         if self.extensions:
             self.payload["extensions"] = self.extensions
 
@@ -68,8 +69,8 @@ if __name__ == "__main__":
                 base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
                 credential = Credential(username=ARGS.omeusername[i], password=ARGS.omepassword[i])
                 payload = {}
-                unregistervcentershelper = UnregisterVcenters(base_url=base_url, omeIp=ARGS.ip, omeUsercredential=credential, vCenterUUID=ARGS.vcUUID[i], payload=payload, extensions=ARGS.extensions)
-                unregistervcentershelper.create_payload()
+                unregistervcentershelper = UnregisterVcenters()
+                unregistervcentershelper.create_payload(base_url=base_url, omeIp=ARGS.ip, omeUsercredential=credential, vCenterUUID=ARGS.vcUUID[i], payload=payload, extensions=ARGS.extensions)
                 print(unregistervcentershelper.unregisterVc())
         else:
             print("Invalid input. Each input parameter should be a list") 
