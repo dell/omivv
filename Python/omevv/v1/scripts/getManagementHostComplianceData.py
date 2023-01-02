@@ -16,7 +16,10 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class HostManagementComplianceWrapper:
-    def __init__(self, base_url, vcUsercredential, vCenterUUID, compliance_filter):
+    def __init__(self):
+        pass
+
+    def create_payload(self, base_url, vcUsercredential, vCenterUUID, compliance_filter):
         credential = vcUsercredential.username + ":" + vcUsercredential.password
         basicAuth = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
         headers = {constants.vcGuidHeader: vCenterUUID}
@@ -67,14 +70,15 @@ if __name__ == "__main__":
     if ARGS.ip is not None and ARGS.vcusername is not None and ARGS.vcpassword is not None and ARGS.vcUUID is not None and ARGS.compliance_filter is not None:
         base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
         credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
-        output=HostManagementComplianceWrapper(base_url=base_url, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, compliance_filter=ARGS.compliance_filter).get_managed_hosts_compliance()
-        
+        hostManagementComplianceWrapper = HostManagementComplianceWrapper()
+        hostManagementComplianceWrapper.create_payload(base_url=base_url, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, compliance_filter=ARGS.compliance_filter)
+        output = hostManagementComplianceWrapper.get_managed_hosts_compliance()
         book = xlwt.Workbook()
         sheet1 = book.add_sheet('sheet1', cell_overwrite_ok=True)
         
         column_count = 0;
         data_present = False;
-        HostManagementComplianceWrapper(base_url=base_url, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, compliance_filter=ARGS.compliance_filter).populate_headers(column_count)  
+        hostManagementComplianceWrapper.populate_headers(column_count)  
         column_count = column_count + 1;
         for row_num,x in enumerate(output):
             if ARGS.compliance_filter == x.state:
