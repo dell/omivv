@@ -12,12 +12,14 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class ModifyDriftDetectionScheduleWrapper:
-    def __init__(self, base_url, omeIp, vcUsercredential, vCenterUUID, payload, baseline_profile_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, time):
+    def __init__(self):
+        self.headers["Content-Type"] = 'application/json'
+        
+    def create_payload(self, base_url, omeIp, vcUsercredential, vCenterUUID, payload, baseline_profile_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, time):
         credential = vcUsercredential.username + ":" + vcUsercredential.password
         basicAuth = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
         self.headers = {constants.vcGuidHeader: vCenterUUID}
         self.headers["Authorization"] = basicAuth
-        self.headers["Content-Type"] = 'application/json'
         self.omeIp = omeIp
         self.uuid = vCenterUUID
         self.payload = payload
@@ -34,7 +36,6 @@ class ModifyDriftDetectionScheduleWrapper:
             with_headers(headers=self.headers). \
             with_timeout(constants.generalTimeOut_sec)
 
-    def create_payload(self):
         self.payload["jobSchedule"] = {
             "monday": self.monday,
             "tuesday": self.tuesday,
@@ -92,8 +93,8 @@ if __name__ == "__main__":
             base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
             credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
             payload = {}
-            driftdetectionhelper = ModifyDriftDetectionScheduleWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, baseline_profile_id=ARGS.baseline_profile_id, monday=ARGS.monday, tuesday=ARGS.tuesday, wednesday=ARGS.wednesday, thursday=ARGS.thursday, friday=ARGS.friday, saturday=ARGS.saturday, sunday=ARGS.sunday, time=ARGS.time)
-            driftdetectionhelper.create_payload()
+            driftdetectionhelper = ModifyDriftDetectionScheduleWrapper()
+            driftdetectionhelper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, baseline_profile_id=ARGS.baseline_profile_id, monday=ARGS.monday, tuesday=ARGS.tuesday, wednesday=ARGS.wednesday, thursday=ARGS.thursday, friday=ARGS.friday, saturday=ARGS.saturday, sunday=ARGS.sunday, time=ARGS.time)
             print(driftdetectionhelper.modifyDriftDetectionSchedule())
     else:
         print("Required parameters missing. Please review module help.")
