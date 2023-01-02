@@ -17,12 +17,14 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 retry = 3
 
 class HostDiscoveryWrapper:
-    def __init__(self, base_url, omeIp, vcUsercredential, vCenterUUID, payload, jobname, jobdescription, console_entity_id, device_username, device_password, use_global_creds):
+    def __init__(self):
+        self.headers["Content-Type"] = 'application/json'
+
+    def create_payload(self, base_url, omeIp, vcUsercredential, vCenterUUID, payload, jobname, jobdescription, console_entity_id, device_username, device_password, use_global_creds):
         credential = vcUsercredential.username + ":" + vcUsercredential.password
         basicAuth = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
         self.headers = {constants.vcGuidHeader: vCenterUUID}
         self.headers["Authorization"] = basicAuth
-        self.headers["Content-Type"] = 'application/json'
         self.omeIp = omeIp
         self.uuid = vCenterUUID
         self.payload = payload
@@ -36,7 +38,6 @@ class HostDiscoveryWrapper:
             with_headers(headers=self.headers). \
             with_timeout(constants.generalTimeOut_sec)
 
-    def create_payload(self):
         if self.jobname:
             self.payload["jobName"] = self.jobname;
         if self.jobdescription:
@@ -103,8 +104,8 @@ if __name__ == "__main__":
         base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
         credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
         payload = {}
-        hostdiscoveryhelper = HostDiscoveryWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, console_entity_id=ARGS.console_entity_id, device_username=ARGS.device_username, device_password=ARGS.device_password, use_global_creds=ARGS.use_global_creds)
-        hostdiscoveryhelper.create_payload()
+        hostdiscoveryhelper = HostDiscoveryWrapper()
+        hostdiscoveryhelper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, console_entity_id=ARGS.console_entity_id, device_username=ARGS.device_username, device_password=ARGS.device_password, use_global_creds=ARGS.use_global_creds)
         print(hostdiscoveryhelper.run_discovery())
     else:
         print("Required parameters missing. Please review module help.")
