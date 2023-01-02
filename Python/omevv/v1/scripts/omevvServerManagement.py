@@ -14,12 +14,14 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 retry = 3
 
 class HostsManagementWrapper:
-    def __init__(self, base_url, omeIp, vcUsercredential, vCenterUUID, payload, jobname, jobdescription, host_ids):
+    def __init__(self):
+        self.headers["Content-Type"] = 'application/json'
+
+    def create_payload(self, base_url, omeIp, vcUsercredential, vCenterUUID, payload, jobname, jobdescription, host_ids):
         credential = vcUsercredential.username + ":" + vcUsercredential.password
         basicAuth = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
         self.headers = {constants.vcGuidHeader: vCenterUUID}
         self.headers["Authorization"] = basicAuth
-        self.headers["Content-Type"] = 'application/json'
         self.omeIp = omeIp
         self.uuid = vCenterUUID
         self.payload = payload
@@ -30,7 +32,6 @@ class HostsManagementWrapper:
             with_headers(headers=self.headers). \
             with_timeout(constants.generalTimeOut_sec)
 
-    def create_payload(self):
         if self.host_ids:
             self.payload["hostIDs"] = self.host_ids
         if self.jobname:
@@ -83,8 +84,8 @@ if __name__ == "__main__":
         if type(ARGS.host_ids) == list:
             base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
             credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
-            hostmgmthelper = HostsManagementWrapper(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload={}, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, host_ids=ARGS.host_ids)
-            hostmgmthelper.create_payload()
+            hostmgmthelper = HostsManagementWrapper()
+            hostmgmthelper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload={}, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, host_ids=ARGS.host_ids)
             print(hostmgmthelper.manage())
         else:
             print("Invalid input for host_ids") 
