@@ -13,13 +13,14 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class ModifyDriftDetectionScheduleWrapper:
     def __init__(self):
-        self.headers["Content-Type"] = 'application/json'
+        pass
         
     def create_payload(self, base_url, omeIp, vcUsercredential, vCenterUUID, payload, baseline_profile_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, time):
         credential = vcUsercredential.username + ":" + vcUsercredential.password
         basicAuth = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
         self.headers = {constants.vcGuidHeader: vCenterUUID}
         self.headers["Authorization"] = basicAuth
+        self.headers["Content-Type"] = 'application/json'
         self.omeIp = omeIp
         self.uuid = vCenterUUID
         self.payload = payload
