@@ -8,7 +8,7 @@ from omevv_apis_client.models import ErrorObject
 from omevv_apis_client.models import Credential
 import constants
 import base64
-
+import pandas as pd
 from omevv_apis_client.types import Response
 
 
@@ -42,7 +42,7 @@ if __name__ == "__main__":
                         help="password of vcenter")
     PARSER.add_argument("--vcUUID", "-d", required=True, default=None,
                         help="UUID of the relevant vCenter")
-    PARSER.add_argument("--omevv_group_id", "-g", required=True, default=None, help="omevv_group_id")
+    PARSER.add_argument("--omevv_group_id", "-g", required=True, default=None, help="OMEVV group ID of the cluster, only group ID will be accepted")
     ARGS = PARSER.parse_args()
 
     if ARGS.ip is not None and ARGS is not None and ARGS.vcpassword is not None and ARGS.vcUUID is not None \
@@ -51,7 +51,15 @@ if __name__ == "__main__":
         credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
         output = ManageHostWrapper(base_url=base_url, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID,
                                    omevv_Group_id=ARGS.omevv_group_id).get_managed_hosts_firmware_inventory_by_group()
-        print("Output here-----------", output)
-        # TODO: Error handling and response formatting
+        if output is not None:
+            print("Output here-----------", output)
+            list_data = output.group_firmware_inventory_device_model
+            list_data = [{"Host": each['host'], "Service Tag": each['serviceTag'], "Name": each['firmware']['deviceDescription'], "Type": each['firmware']['softwareType'], "Version": each['firmware']['version'], "Installation Date": each['firmware']['installationDate']
+                          } for each in list_data]
+
+            df = pd.DataFrame(list_data)
+            df.to_csv("Firmware_Inventory.csv", index=False)
+        else:
+            print("Unable to get firmware inventory of the cluster.")
     else:
         print("Required parameters missing. Please review module help.")
