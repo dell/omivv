@@ -7,6 +7,8 @@ import base64
 import time
 from omevv_apis_client import AuthenticatedClient
 from omevv_apis_client.models import Credential
+from omevv_apis_client.api.console_compliance_and_discovery import manage_hosts_by_console
+from omevv_apis_client.models.manage_hosts_request import ManageHostsRequest
 
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -33,37 +35,31 @@ class HostsManagementWrapper:
             with_headers(headers=self.headers). \
             with_timeout(constants.generalTimeOut_sec)
 
-        if self.host_ids:
-            self.payload["hostIDs"] = self.host_ids
-        if self.jobname:
-            self.payload["jobName"] = self.jobname
-        if self.jobdescription:
-            self.payload["jobDescription"] = self.jobdescription
-
-    def manage(self):
+        self.json_body = ManageHostsRequest(host_i_ds=self.host_ids, job_name=self.jobname, job_description=self.jobdescription)
+ 
+    def run_manage_job(self):        
         global retry
-        headers = self.headers
-        url = 'https://%s/omevv/GatewayService/v1/Consoles/%s/Hosts/Manage'%(self.omeIp, self.uuid)
         try:
-            response = requests.post(url, data=json.dumps(self.payload), headers=headers, verify=False);
-            data = response.json();
-            status_code = response.status_code
-            if status_code == 202:
-              return "Manage job is created successfully with id "+ str(data)
-            elif status_code == 400 or status_code == 500 or status_code == 404:
-                return "Error occured while creating manage job : "+ str(data)
-            else:
-                raise Exception("Error occured while creating manage job ",data);
+            response: Response[Union[ErrorObject, int]] = \
+                manage_hosts_by_console.sync_detailed(uuid=self.uuid, client=self.client, json_body=self.json_body)
+            
         except Exception as e:
             print("Exception occured while creating manage job ",e," retrying ..");
             if retry > 0:
                 retry = retry - 1;
                 time.sleep(5);
-                self.manage();
-
+                self.run_manage_job();
             else:
                 print("Failed after 3 retries,exiting");
                 sys.exit();
+
+        try:
+            manage_job_id = int(response.parsed)
+
+        except Exception as exception:
+            return response.parsed
+
+        return "Manage job is created successfully with job id "+ str(manage_job_id)   
 
 if __name__ == "__main__":
     PARSER = argparse.ArgumentParser(description=__doc__,
@@ -87,7 +83,7 @@ if __name__ == "__main__":
             credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
             hostmgmthelper = HostsManagementWrapper()
             hostmgmthelper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload={}, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, host_ids=ARGS.host_ids)
-            print(hostmgmthelper.manage())
+            print(hostmgmthelper.run_manage_job())
         else:
             print("Invalid input for host_ids") 
     else:
