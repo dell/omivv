@@ -10,6 +10,8 @@ import constants
 import base64
 import time
 from omevv_apis_client.types import Response
+from omevv_apis_client.api.console_compliance_and_discovery import un_manage_hosts_by_console
+from omevv_apis_client.models.un_manage_hosts_request import UnManageHostsRequest
 
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -36,37 +38,31 @@ class UnmanageHostsWrapper:
             with_headers(headers=self.headers). \
             with_timeout(constants.generalTimeOut_sec)
 
-        if self.host_ids:
-            self.payload["hostIDs"] = self.host_ids
-        if self.jobname:
-            self.payload["jobName"] = self.jobname
-        if self.jobdescription:
-            self.payload["jobDescription"] = self.jobdescription
-
-    def unmanage(self):
+        self.json_body = UnManageHostsRequest(host_i_ds=self.host_ids, job_name=self.jobname, job_description=self.jobdescription)
+ 
+    def run_unmanage_job(self):        
         global retry
-        headers = self.headers
-        url = 'https://%s/omevv/GatewayService/v1/Consoles/%s/Hosts/UnManage'%(self.omeIp, self.uuid)
         try:
-            response = requests.post(url, data=json.dumps(self.payload), headers=headers, verify=False);
-            data = response.json();
-            status_code = response.status_code
-            if status_code == 202:
-              return "Unmanage job is created successfully with id "+ str(data)
-            elif status_code == 400 or status_code == 500 or status_code == 404:
-                return "Error occured while unmanaging : "+ str(data)
-            else:
-                raise Exception("Error occured while trying to attempt unmanage ",data);
+            response: Response[Union[ErrorObject, int]] = \
+                un_manage_hosts_by_console.sync_detailed(uuid=self.uuid, client=self.client, json_body=self.json_body)
+            
         except Exception as e:
-            print("Exception occured while trying to attempt unmanage ",e," retrying ..");
+            print("Exception occured while unmanaging servers ",e," retrying ..");
             if retry > 0:
                 retry = retry - 1;
                 time.sleep(5);
-                self.unmanage();
-
+                self.run_unmanage_job();
             else:
                 print("Failed after 3 retries,exiting");
                 sys.exit();
+
+        try:
+            unmanage_job_id = int(response.parsed)
+
+        except Exception as exception:
+            return response.parsed
+
+        return "Unmanage job is created successfully with job id "+ str(unmanage_job_id)   
 
 if __name__ == "__main__":
     PARSER = argparse.ArgumentParser(description=__doc__,
@@ -91,7 +87,7 @@ if __name__ == "__main__":
             payload = {}
             unmanagehosthelper = UnmanageHostsWrapper()
             unmanagehosthelper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, host_ids=ARGS.host_ids)
-            print(unmanagehosthelper.unmanage())
+            print(unmanagehosthelper.run_unmanage_job())
         else:
             print("Invalid input for host_ids") 
     else:
