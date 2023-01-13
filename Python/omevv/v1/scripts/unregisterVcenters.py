@@ -54,7 +54,12 @@ class UnregisterVcenters:
         try:
             response: Response[Union[Any, ErrorObject]] = \
                 remove_extensions.sync_detailed(uuid=self.uuid, client=self.client, json_body=self.json_body)
-        
+            
+            if response.status_code == 200:
+                print("vCenter unregistered successfully for the given extensions")
+            else:
+                print(json.loads(response.content)["message"])        
+
         except Exception as e:
             print("Exception occured while unregistering vCenter(s) ",e," retrying ..");
             if retry > 0:
