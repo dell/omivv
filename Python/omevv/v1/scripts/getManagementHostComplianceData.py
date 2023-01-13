@@ -9,50 +9,64 @@ from omevv_apis_client.models import Credential
 import constants
 import base64
 import xlwt
+import time
+import sys
+import csv
+import utilities as utility_object
 from omevv_apis_client.types import Response
 
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+retry = 3
 
 class HostManagementComplianceWrapper:
     def __init__(self):
         pass
 
-    def create_payload(self, base_url, vcUsercredential, vCenterUUID, compliance_filter):
+    def create_payload(self, base_url, omeIp, vcUsercredential, vCenterUUID, compliance_filter):
         credential = vcUsercredential.username + ":" + vcUsercredential.password
         basicAuth = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
-        headers = {constants.vcGuidHeader: vCenterUUID}
-        headers["Authorization"] = basicAuth
+        self.headers = {constants.vcGuidHeader: vCenterUUID}
+        self.headers["Authorization"] = basicAuth
+        self.omeIp = omeIp
         self.uuid = vCenterUUID
         self.compliance_filter = compliance_filter
         self.client = AuthenticatedClient(base_url=base_url, token=None, verify_ssl=False). \
-            with_headers(headers=headers). \
+            with_headers(headers=self.headers). \
             with_timeout(constants.generalTimeOut_sec)
 
     def get_managed_hosts_compliance(self):
-        response: Response[Union[ErrorObject, List[HostCompliance]]] = \
-            get_host_compliance.sync_detailed(uuid=self.uuid, client=self.client)
-        return response.parsed
+        global retry
+        file_name = "host_management_compliance_data.csv";
+        headers = self.headers
+        url = 'https://%s/omevv/GatewayService/v1/Consoles/%s/Compliance'%(self.omeIp, self.uuid)
+        try:
+            response = requests.get(url, headers=self.headers, verify=False);
+            data = response.json();
+            filtered_data = []
+            for entry in data:
+                if entry['state'] == self.compliance_filter:
+                    filtered_data.append(entry)
 
-    def populate_headers(self, column_count):
-        sheet1.write(column_count,0,"hostid")
-        sheet1.write(column_count,1,"host name")
-        sheet1.write(column_count,2,"model")
-        sheet1.write(column_count,3,"service tag")
-        sheet1.write(column_count,4,"console id")
-        sheet1.write(column_count,5,"console entity id")
-        sheet1.write(column_count,6,"hypervisor")
-        sheet1.write(column_count,7,"idrac ip")
-        sheet1.write(column_count,8,"idrac firmware version")
-        sheet1.write(column_count,9,"idrac license type")
-        sheet1.write(column_count,10,"idrac license description")
-        sheet1.write(column_count,11,"idrac license expiration date")
-        sheet1.write(column_count,12,"license entitlement id")
-        sheet1.write(column_count,13,"idrac license status")
-        sheet1.write(column_count,14,"snmp trap status")
-        sheet1.write(column_count,15,"state")
-        sheet1.write(column_count,16,"connection state")
+            status_code = response.status_code
+            
+            if status_code == 200:
+                utility_object.Utilities().write_to_csv(filtered_data, file_name)
+            elif status_code == 400 or status_code == 500 or status_code == 404 or status_code == 401 or status_code == 403:
+                return "Error occured while getting host management compliance data"
+            else:
+                raise Exception("Error occured while getting host management compliance data");
+        except Exception as e:
+            print("Exception occured while getting host management compliance data ",e," retrying ..");
+            if retry > 0:
+                retry = retry - 1;
+                time.sleep(5);
+                self.get_managed_hosts_compliance();
+
+            else:
+                print("Failed after 3 retries,exiting");
+                sys.exit();
 
 if __name__ == "__main__":
     PARSER = argparse.ArgumentParser(description=__doc__,
@@ -71,56 +85,7 @@ if __name__ == "__main__":
         base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
         credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
         hostManagementComplianceWrapper = HostManagementComplianceWrapper()
-        hostManagementComplianceWrapper.create_payload(base_url=base_url, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, compliance_filter=ARGS.compliance_filter)
+        hostManagementComplianceWrapper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, compliance_filter=ARGS.compliance_filter)
         output = hostManagementComplianceWrapper.get_managed_hosts_compliance()
-        book = xlwt.Workbook()
-        sheet1 = book.add_sheet('sheet1', cell_overwrite_ok=True)
-        
-        column_count = 0;
-        data_present = False;
-        hostManagementComplianceWrapper.populate_headers(column_count)  
-        column_count = column_count + 1;
-        for row_num,x in enumerate(output):
-            if ARGS.compliance_filter == x.state:
-                data_present = True;
-                sheet1.write(column_count, 0, x.hostid)
-                sheet1.write(column_count, 1, x.host_name)
-                sheet1.write(column_count, 2, x.model)
-                sheet1.write(column_count, 3, x.service_tag)
-                sheet1.write(column_count, 4, x.console_id)
-                sheet1.write(column_count, 5, x.console_entity_id)
-                sheet1.write(column_count, 6, x.hypervisor)
-                sheet1.write(column_count, 7, x.idrac_ip)
-                sheet1.write(column_count, 8, x.idrac_firmware_version)
-                column_count_copy = column_count
-                if len(x.license_details) > 0 and x.license_details is not None:
-                    for license_row,license in enumerate(x.license_details):
-                        if license_row > 0:
-                            column_count = column_count + 1;
-
-                        sheet1.write(column_count, 9, license.idrac_license_type)
-                        sheet1.write(column_count, 10, license.idrac_license_description)
-
-                        if license.idrac_license_expiration_date is not None:
-                            sheet1.write(column_count, 11, str(license.idrac_license_expiration_date))
-                        else:
-                            sheet1.write(column_count, 11, "Not Available")
-                        
-                        sheet1.write(column_count, 12, license.license_entitlement_id)
-                
-                column_count = column_count_copy
-                sheet1.write(column_count, 13, x.idrac_license_status)
-                sheet1.write(column_count, 14, x.snmp_trap_status)
-                sheet1.write(column_count, 15, x.state)
-                sheet1.write(column_count, 16, x.connection_state)
-
-                column_count = column_count + 1;
-
-            name = "export.xls"
-            book.save(name)
-
-        if data_present == False:
-            print("There are no " +ARGS.compliance_filter+" hosts")
-
     else:
         print("Required parameters missing. Please review module help.")
