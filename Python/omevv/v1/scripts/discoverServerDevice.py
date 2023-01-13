@@ -10,6 +10,9 @@ import constants
 import base64
 import time
 from omevv_apis_client.types import Response
+from omevv_apis_client.api.console_compliance_and_discovery import discover_hosts
+from omevv_apis_client.models.create_hosts_discover_request import CreateHostsDiscoverRequest
+from omevv_apis_client.models.host_discovery_group import HostDiscoveryGroup
 
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -39,48 +42,35 @@ class HostDiscoveryWrapper:
             with_headers(headers=self.headers). \
             with_timeout(constants.generalTimeOut_sec)
 
-        if self.jobname:
-            self.payload["jobName"] = self.jobname;
-        if self.jobdescription:
-            self.payload["jobDescription"] = self.jobdescription;
-
-        hostDiscoveryGroupPayload = []
-        hostDiscoveryGroupPayload.append(
-            {
-                "consoleEntityIDs": [self.console_entity_id],
-                "userName": self.device_username,
-                "passWord": self.device_password,
-                "useGlobalCredentials": self.use_global_creds            
-            }
-        )
-
+        self.hostDiscoveryGroupList = []
         if self.console_entity_id and self.device_username and self.device_password:
-            self.payload["hostDiscoveryGroups"] = hostDiscoveryGroupPayload;
+            self.hostDiscoveryGroupList.append(HostDiscoveryGroup(console_entity_i_ds=self.console_entity_id, user_name=self.device_username, pass_word=self.device_password, use_global_credentials=self.use_global_creds))
 
-    def run_discovery(self):
+        self.json_body = CreateHostsDiscoverRequest(job_name=self.jobname, job_description=self.jobdescription, host_discovery_groups=self.hostDiscoveryGroupList)
+            
+    def run_discovery_job(self):        
         global retry
-        headers = self.headers
-        url = 'https://%s/omevv/GatewayService/v1/Consoles/%s/Hosts/Discover'%(self.omeIp, self.uuid)
         try:
-            response = requests.post(url, data=json.dumps(self.payload), headers=headers, verify=False);
-            data = response.json();
-            status_code = response.status_code
-            if status_code == 202:
-              return "Discovery job is created successfully with id "+ str(data)
-            elif status_code == 400 or status_code == 500 or status_code == 404:
-                return "Error occured while creating discovery job : "+ str(data)
-            else:
-                raise Exception("Error occured while creating discovery job ",data);
+            response: Response[Union[ErrorObject, int]] = \
+                discover_hosts.sync_detailed(uuid=self.uuid, client=self.client, json_body=self.json_body)
+            
         except Exception as e:
             print("Exception occured while creating discovery job ",e," retrying ..");
             if retry > 0:
                 retry = retry - 1;
                 time.sleep(5);
-                self.run_discovery();
-
+                self.run_discovery_job();
             else:
                 print("Failed after 3 retries,exiting");
                 sys.exit();
+
+        try:
+            discovery_job_id = int(response.parsed)
+
+        except Exception as exception:
+            return response.parsed
+
+        return "Discovery job is created successfully with job id "+ str(discovery_job_id)   
 
 if __name__ == "__main__":
     PARSER = argparse.ArgumentParser(description=__doc__,
@@ -94,7 +84,7 @@ if __name__ == "__main__":
                         help="UUID of the relevant vCenter")
     PARSER.add_argument("--jobname", "-g", required=True, default=None, help="job name")
     PARSER.add_argument("--jobdescription", required=False, default=None, help="job description")
-    PARSER.add_argument("--console_entity_id", required=True, default=None, help="console entity id of the server device")
+    PARSER.add_argument("--console_entity_id", nargs = '+', required=True, default=None, help="console entity id of the server device")
     PARSER.add_argument("--device_username", required=True, default=None, help="username of device")
     PARSER.add_argument("--device_password", required=True, default=None, help="password of device")
     PARSER.add_argument("--use_global_creds", required=True, default=None, help="indicate whether to use global credentials")
@@ -107,6 +97,6 @@ if __name__ == "__main__":
         payload = {}
         hostdiscoveryhelper = HostDiscoveryWrapper()
         hostdiscoveryhelper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, jobname=ARGS.jobname, jobdescription=ARGS.jobdescription, console_entity_id=ARGS.console_entity_id, device_username=ARGS.device_username, device_password=ARGS.device_password, use_global_creds=ARGS.use_global_creds)
-        print(hostdiscoveryhelper.run_discovery())
+        print(hostdiscoveryhelper.run_discovery_job())
     else:
         print("Required parameters missing. Please review module help.")
