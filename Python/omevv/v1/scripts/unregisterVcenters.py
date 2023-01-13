@@ -10,10 +10,14 @@ import base64
 import constants
 import time
 from omevv_apis_client.types import Response
+from omevv_apis_client.api.console_management import remove_extensions
+from omevv_apis_client.models.console_extension_request import ConsoleExtensionRequest
+from omevv_apis_client.models.console_provider_type import ConsoleProviderType
 
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+retry = 3
 
 class UnregisterVcenters:
     def __init__(self):
@@ -33,47 +37,54 @@ class UnregisterVcenters:
             with_headers(headers=self.headers). \
             with_timeout(constants.generalTimeOut_sec)
 
-        if self.extensions:
-            self.payload["extensions"] = self.extensions
-
-    def unregisterVc(self):
-        headers = self.headers
-        url = 'https://%s/omevv/GatewayService/v1/Consoles/%s/removeExtensions'%(self.omeIp, self.uuid)
-        try:
-            response = requests.post(url, data=json.dumps(self.payload), headers=headers, verify=False);
-            status_code = response.status_code
-            if status_code == 200:
-              return "vCenter with uuid "+self.uuid+" unregistered successfully"
-            elif status_code == 400 or status_code == 500 or status_code == 404:
-                data = response.json()
-                return "Error occured while unregistering : "+ str(data)
+        self.consoleProviderTypeList = []
+        for extension in self.extensions:
+            if extension == "WEBCLIENT_PHA":
+                self.consoleProviderTypeList.append(ConsoleProviderType('WEBCLIENT_PHA'))
+            elif extension == "VLCM":
+                self.consoleProviderTypeList.append(ConsoleProviderType('VLCM'))
             else:
-                data = response.json()
-                raise Exception("Error occured while trying to attempt unregistration ",data);
+                print("Invalid input for extensions. Please provide valid inputs.")
+                sys.exit()
+                
+        self.json_body = ConsoleExtensionRequest(extensions=self.consoleProviderTypeList)
+ 
+    def unregister_vcenters(self):        
+        global retry
+        try:
+            response: Response[Union[Any, ErrorObject]] = \
+                remove_extensions.sync_detailed(uuid=self.uuid, client=self.client, json_body=self.json_body)
+        
         except Exception as e:
-            print(e);
+            print("Exception occured while unregistering vCenter(s) ",e," retrying ..");
+            if retry > 0:
+                retry = retry - 1;
+                time.sleep(5);
+                self.unregister_vcenters();
+            else:
+                print("Failed after 3 retries,exiting");
+                sys.exit();
 
 if __name__ == "__main__":
     PARSER = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawTextHelpFormatter)
     PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--omeusername", "--arg1", nargs = '+', required=True, default=None, type = str, help="space separated ome username")
-    PARSER.add_argument("--omepassword", "--arg2", nargs = '+', required=True, default=None, type = str, help="space separated ome password")
-    PARSER.add_argument("--vcUUID", "--arg3", nargs = '+', required=True, default=None, type = str, help="space separated vCenter uuids which needs to be unregistered")
+    PARSER.add_argument("--omeusername", "--arg1", required=True, default=None, type = str, help="ome username")
+    PARSER.add_argument("--omepassword", "--arg2", required=True, default=None, type = str, help="ome password")
+    PARSER.add_argument("--vcUUID", "--arg3", required=True, default=None, type = str, help="vCenter uuid which needs to be unregistered")
     PARSER.add_argument("--extensions", "--arg4", nargs = '+', required=True, default=None, type = str, help="space separated extensions which needs to be unregistered")
     
     ARGS = PARSER.parse_args()
 
     if ARGS.ip is not None and ARGS.omeusername is not None and ARGS.omepassword is not None and ARGS.vcUUID is not None and ARGS.extensions is not None:
-        if type(ARGS.omeusername) == list and type(ARGS.omepassword) == list and type(ARGS.vcUUID) == list and type(ARGS.extensions) == list:
-            for i in range(0, len(ARGS.vcUUID)):
-                base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
-                credential = Credential(username=ARGS.omeusername[i], password=ARGS.omepassword[i])
-                payload = {}
-                unregistervcentershelper = UnregisterVcenters()
-                unregistervcentershelper.create_payload(base_url=base_url, omeIp=ARGS.ip, omeUsercredential=credential, vCenterUUID=ARGS.vcUUID[i], payload=payload, extensions=ARGS.extensions)
-                print(unregistervcentershelper.unregisterVc())
+        if type(ARGS.extensions) == list:
+            base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
+            credential = Credential(username=ARGS.omeusername, password=ARGS.omepassword)
+            payload = {}
+            unregistervcentershelper = UnregisterVcenters()
+            unregistervcentershelper.create_payload(base_url=base_url, omeIp=ARGS.ip, omeUsercredential=credential, vCenterUUID=ARGS.vcUUID, payload=payload, extensions=ARGS.extensions)
+            unregistervcentershelper.unregister_vcenters()
         else:
-            print("Invalid input. Each input parameter should be a list") 
+            print("Invalid input. Extensions parameter should be a list") 
     else:
         print("Required parameters missing. Please review module help.")
