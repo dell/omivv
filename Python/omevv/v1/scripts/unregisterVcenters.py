@@ -77,7 +77,7 @@ if __name__ == "__main__":
     PARSER.add_argument("--omeusername", "--arg1", required=True, default=None, type = str, help="ome username")
     PARSER.add_argument("--omepassword", "--arg2", required=True, default=None, type = str, help="ome password")
     PARSER.add_argument("--vcUUID", "--arg3", required=True, default=None, type = str, help="vCenter uuid which needs to be unregistered")
-    PARSER.add_argument("--extensions", "--arg4", nargs = '+', required=True, default=None, type = str, help="space separated extensions which needs to be unregistered")
+    PARSER.add_argument("--extensions", "--arg4", nargs = '+', required=True, default=None, type = str, help="space separated extensions which needs to be unregistered. Possible values of extensions - WEBCLIENT_PHA, VLCM")
     
     ARGS = PARSER.parse_args()
 
