@@ -56,7 +56,7 @@ class ModifyDriftDetectionScheduleWrapper:
             response: Response[Union[Any, ErrorObject]] = \
                 edit_baseline_profile.sync_detailed(uuid=self.uuid, cpid=self.baseline_profile_id, client=self.client, json_body=self.json_body)
             
-            if str(response.parsed) == "None":
+            if response.status_code == 200:
                 return "Drift detection schedule modified successfully"
             else:
                 return response.parsed
