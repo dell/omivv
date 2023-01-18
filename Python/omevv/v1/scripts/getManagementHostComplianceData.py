@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Tuple
 import argparse
 from omevv_apis_client import AuthenticatedClient
 from omevv_apis_client.api.console_compliance_and_discovery import get_host_compliance
@@ -37,27 +37,24 @@ class HostManagementComplianceWrapper:
             with_headers(headers=self.headers). \
             with_timeout(constants.generalTimeOut_sec)
 
-    def get_managed_hosts_compliance(self):
+    def get_managed_hosts_compliance(self) -> Tuple[bool,object]:
         global retry
-        file_name = "host_management_compliance_data.csv";
         try: 
             response: Response[Union[ErrorObject, List[HostCompliance]]] = \
                 get_host_compliance.sync_detailed(uuid=self.uuid, client=self.client)
 
-            data = json.loads(response.content)
-            
-            filtered_data = []
-            for entry in data:
-                if entry['state'] == self.compliance_filter:
-                    filtered_data.append(entry)
-
             status_code = response.status_code
-            
             if status_code == 200:
-                utility_object.Utilities().write_to_csv(filtered_data, file_name)
-                return "Host management compliance data has been retrieved successfully in downloaded csv file"
+                data = json.loads(response.content)
+            
+                filtered_data = []
+                for entry in data:
+                    if entry['state'] == self.compliance_filter:
+                        filtered_data.append(entry)
+
+                return (True, filtered_data)
             elif status_code == 400 or status_code == 500 or status_code == 404 or status_code == 401 or status_code == 403:
-                return "Error occured while getting host management compliance data"
+                return (False, response.parsed)
             else:
                 raise Exception("Error occured while getting host management compliance data");
         except Exception as e:
@@ -91,6 +88,15 @@ if __name__ == "__main__":
         credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
         hostManagementComplianceWrapper = HostManagementComplianceWrapper()
         hostManagementComplianceWrapper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, compliance_filter=ARGS.compliance_filter)
-        print(hostManagementComplianceWrapper.get_managed_hosts_compliance())
+        file_name = "host_management_compliance_data.csv";
+        success, response = hostManagementComplianceWrapper.get_managed_hosts_compliance()
+        if success and response is not None and len(response) > 0: 
+            utility_object.Utilities().write_to_csv(response, file_name)
+            print("Host management compliance data has been retrieved successfully in downloaded csv file")
+        elif success and len(response) == 0:
+            print("Not able to retrieve compliance data for the input compliance filter",ARGS.compliance_filter)
+        else:
+            print("Error occured while getting host management compliance data",response)
+                
     else:
         print("Required parameters missing. Please review module help.")
