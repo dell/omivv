@@ -12,6 +12,7 @@ import xlwt
 import time
 import sys
 import csv
+import json
 import utilities as utility_object
 from omevv_apis_client.types import Response
 
@@ -39,11 +40,12 @@ class HostManagementComplianceWrapper:
     def get_managed_hosts_compliance(self):
         global retry
         file_name = "host_management_compliance_data.csv";
-        headers = self.headers
-        url = 'https://%s/omevv/GatewayService/v1/Consoles/%s/Compliance'%(self.omeIp, self.uuid)
-        try:
-            response = requests.get(url, headers=self.headers, verify=False);
-            data = response.json();
+        try: 
+            response: Response[Union[ErrorObject, List[HostCompliance]]] = \
+                get_host_compliance.sync_detailed(uuid=self.uuid, client=self.client)
+
+            data = json.loads(response.content)
+            
             filtered_data = []
             for entry in data:
                 if entry['state'] == self.compliance_filter:
@@ -53,6 +55,7 @@ class HostManagementComplianceWrapper:
             
             if status_code == 200:
                 utility_object.Utilities().write_to_csv(filtered_data, file_name)
+                return "Host management compliance data has been retrieved successfully in downloaded csv file"
             elif status_code == 400 or status_code == 500 or status_code == 404 or status_code == 401 or status_code == 403:
                 return "Error occured while getting host management compliance data"
             else:
@@ -67,6 +70,8 @@ class HostManagementComplianceWrapper:
             else:
                 print("Failed after 3 retries,exiting");
                 sys.exit();
+
+        return response.parsed
 
 if __name__ == "__main__":
     PARSER = argparse.ArgumentParser(description=__doc__,
@@ -86,6 +91,6 @@ if __name__ == "__main__":
         credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
         hostManagementComplianceWrapper = HostManagementComplianceWrapper()
         hostManagementComplianceWrapper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID, compliance_filter=ARGS.compliance_filter)
-        output = hostManagementComplianceWrapper.get_managed_hosts_compliance()
+        print(hostManagementComplianceWrapper.get_managed_hosts_compliance())
     else:
         print("Required parameters missing. Please review module help.")
