@@ -10,6 +10,8 @@ import constants
 import base64
 import pandas as pd
 from omevv_apis_client.types import Response
+import utilities as utility_object
+import json
 
 
 class ManageHostWrapper:
@@ -28,8 +30,12 @@ class ManageHostWrapper:
         response: Response[GroupFirmwareInventoryCollectionModel] = \
             get_managed_hosts_firmware_inventory_by_group.sync_detailed(uuid=self.uuid, client=self.client,
                                                                         omevv_group_id=self.omevv_group_id)
-        print(response.parsed)
-        return response.parsed
+        if response.status_code == 404:
+            print("ERROR: The server cannot find the requested resource, check provided OME appliance IP is valid")
+            exit(1)
+        else:
+            response_content = json.loads(response.content.decode("utf-8").replace("'", '"'))
+            return response.parsed, response_content, response.status_code
 
 
 if __name__ == "__main__":
@@ -42,24 +48,35 @@ if __name__ == "__main__":
                         help="password of vcenter")
     PARSER.add_argument("--vcUUID", "-d", required=True, default=None,
                         help="UUID of the relevant vCenter")
-    PARSER.add_argument("--omevv_group_id", "-g", required=True, default=None, help="OMEVV group ID of the cluster, only group ID will be accepted")
+    PARSER.add_argument("--omevv_group_id", "-g", required=True, default=None,
+                        help="OMEVV group ID of the cluster, only group ID will be accepted")
     ARGS = PARSER.parse_args()
 
     if ARGS.ip is not None and ARGS is not None and ARGS.vcpassword is not None and ARGS.vcUUID is not None \
             and ARGS.omevv_group_id is not None:
         base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
         credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
-        output = ManageHostWrapper(base_url=base_url, vcUsercredential=credential, vCenterUUID=ARGS.vcUUID,
-                                   omevv_Group_id=ARGS.omevv_group_id).get_managed_hosts_firmware_inventory_by_group()
-        if output is not None:
-            print("Output here-----------", output)
+        output, content, status_code = \
+            ManageHostWrapper(base_url=base_url,
+                              vcUsercredential=credential,
+                              vCenterUUID=ARGS.vcUUID,
+                              omevv_Group_id=ARGS.omevv_group_id).get_managed_hosts_firmware_inventory_by_group()
+        if status_code == 200:
             list_data = output.group_firmware_inventory_device_model
-            list_data = [{"Host": each['host'], "Service Tag": each['serviceTag'], "Name": each['firmware']['deviceDescription'], "Type": each['firmware']['softwareType'], "Version": each['firmware']['version'], "Installation Date": each['firmware']['installationDate']
+            list_data = [{"Host": each['host'],
+                          "Service Tag": each['serviceTag'],
+                          "Name": each['firmware']['deviceDescription'],
+                          "Type": each['firmware']['softwareType'],
+                          "Version": each['firmware']['version'],
+                          "Installation Date": each['firmware']['installationDate']
                           } for each in list_data]
+            print("Output here-----------", list_data)
+            utility_object.Utilities().write_to_csv(list_data, "GroupFirmwareInventory.csv")
 
-            df = pd.DataFrame(list_data)
-            df.to_csv("Firmware_Inventory.csv", index=False)
         else:
-            print("Unable to get firmware inventory of the cluster.")
+            print("ERROR: Unable to get firmware inventory of the cluster.")
+            print("Error code: ", content["errorCode"])
+            print("Error Message: ", content["message"])
+
     else:
-        print("Required parameters missing. Please review module help.")
+        print("Required parameters are missing. Please review module help.")
