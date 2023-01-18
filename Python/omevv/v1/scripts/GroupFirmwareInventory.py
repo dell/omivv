@@ -14,7 +14,7 @@ import utilities as utility_object
 import json
 
 
-class ManageHostWrapper:
+class GroupFirmwareInvWrapper:
     def __init__(self, base_url, vcUsercredential, vCenterUUID, omevv_Group_id):
         credential = vcUsercredential.username + ":" + vcUsercredential.password
         basicAuth = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
@@ -57,7 +57,7 @@ if __name__ == "__main__":
         base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
         credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
         output, content, status_code = \
-            ManageHostWrapper(base_url=base_url,
+            GroupFirmwareInvWrapper(base_url=base_url,
                               vcUsercredential=credential,
                               vCenterUUID=ARGS.vcUUID,
                               omevv_Group_id=ARGS.omevv_group_id).get_managed_hosts_firmware_inventory_by_group()
