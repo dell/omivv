@@ -4,21 +4,22 @@ import csv
 import time
 import warnings
 from webbrowser import get
-from model import consoleDecoder,repoProfileDecoder
+from omivv_models import consoleDecoder,repoProfileDecoder
+from utilities import Utilities
 
 import requests,json,base64
 
 class RepoDetails:
-    def __init__(self,omevv_ip,omevv_username,omevv_pwd,domain):
-        self.omevv_username = omevv_username.strip()
+    def __init__(self,omivv_ip,omivv_username,omivv_pwd,domain):
+        self.omevv_username = omivv_username.strip()
         self.headers = {'content-type': 'application/json'}
         self.domain = domain
-        self.omevv_password = omevv_pwd.strip()
+        self.omevv_password = omivv_pwd.strip()
         self.login_url = "https://%s/Spectre/api/rest/v1/Services/AuthenticationService/login"%(omevv_ip)
         self.console_url = "https://%s/Spectre/api/rest/v1/Services/ConsoleService/Consoles"%(omevv_ip)
         self.context_url = "https://%s/Spectre/api/rest/v1/Services/ConsoleService/OperationalContext"%(omevv_ip)
         self.repo_url = "https://%s/Spectre/api/rest/v1/Services/PluginProfileService/RepositoryProfiles"%(omevv_ip)
-        self.omevv_encoded_cred = self.encode_cred(self.omevv_username, self.omevv_password)
+        self.omevv_encoded_cred = self.encode_cred(self.omivv_username, self.omivv_password)
         self.payload_cred_dict= {}
         self.payload_cred_dict['console'] = 'consoleUserCredential'
         self.payload_cred_dict['api'] = 'apiUserCredential'
@@ -48,10 +49,8 @@ class RepoDetails:
 
     def create_login(self):
        bearer_token = ""
-       #print(self.omevv_encoded_cred)
        self.headers['Authorization'] = self.omevv_encoded_cred
        cred_json = self.create_payload(self.omevv_username,self.omevv_password,self.domain,"api")
-       #print("cred_json ",cred_json)
        response = requests.post(self.login_url, data=json.dumps(cred_json), headers=self.headers, verify=False);
        data = response.json();
        status_code = response.status_code
@@ -61,7 +60,7 @@ class RepoDetails:
            self.bearer_token = bearer_token
        else:
            raise Exception("Error occured while logging in ", data);
-      # print(bearer_token)
+
        return bearer_token
 
     def get_console_details(self):
@@ -71,18 +70,16 @@ class RepoDetails:
             bearer_token = self.create_login()
             cred_str = 'Bearer ' + bearer_token
             self.headers['Authorization'] = cred_str
-            #print("headers ",self.headers)
             response = requests.get(self.console_url, headers=self.headers, verify=False)
             data = response.json();
             status_code = response.status_code;
-            #print("status code in console ",status_code)
             if status_code == 200:
                 for con in data:
                     s = json.dumps(con)
                     conObj = json.loads(s, object_hook=consoleDecoder)
                     console_list.append(conObj)
             else:
-                raise Exception("Error Occured while fetching the repo profile details ", response)
+                raise Exception("Error Occured while fetching the console list ", response)
 
         except Exception as e:
             print("Exception occured while creating repo ", e, " retrying ..");
@@ -108,7 +105,6 @@ class RepoDetails:
                         console_id = obj.id
                         break
                 context_pyld = self.create_context_payload(console_id,console_username,console_domain,console_pwd)
-                #print(context_pyld)
                 response = requests.post(self.context_url, data=json.dumps(context_pyld), headers=self.headers, verify=False);
                 status_code = response.status_code
                 if status_code == 204:
@@ -117,7 +113,7 @@ class RepoDetails:
             print(e)
 
 
-        #print("status code in context is ",status_code)
+
 
     def get_repoprof_details(self,console_ip,console_hostname,console_username,console_domain,console_pwd):
         prof_list = []
@@ -126,7 +122,6 @@ class RepoDetails:
             response = requests.get(self.repo_url, headers=self.headers, verify=False)
             data = response.json();
             status_code = response.status_code;
-            #print("status code in repoprof ", status_code)
             if status_code == 200:
                 for prof in data:
                     s = json.dumps(prof)
@@ -151,13 +146,6 @@ class RepoDetails:
 
 
 
-
-    def write_to_csv(self,listOfObjects,fileName):
-        with open(fileName, "w") as stream:
-            writer = csv.writer(stream)
-            writer.writerows(listOfObjects)
-
-        print("Successfully written to csv file ",fileName)
 
 
 if __name__ == "__main__":
@@ -193,21 +181,21 @@ if __name__ == "__main__":
     console_file_det = args['consoleFilePath']
 
     repoObj = RepoDetails(omevv_ip,omevv_user,omevv_pswd,omevv_domain)
+    util = Utilities()
     try:
         console_list = repoObj.get_console_details()
         if console_file_det is not None:
-            repoObj.write_to_csv(console_list,console_file_det)
+            util.write_to_csv(console_list,console_file_det)
     except Exception as e:
         print("Exception occured ",e)
     try:
         repoList = repoObj.get_repoprof_details(console_ip, console_hostname, console_username, console_domain, console_pwd)
         if repo_prof_file_det is not None:
-            repoObj.write_to_csv(repoList, repo_prof_file_det)
+            util.write_to_csv(repoList, repo_prof_file_det)
         else:
             for repo in repoList:
                 print(repo)
     except Exception as e:
          print("Exception occured ", e)
-
 
 
