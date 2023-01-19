@@ -10,17 +10,17 @@ import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 retry = 3
-valid_hosts = []
+manage_host_ids = []
 
 class AutoManageCompliantHostsWrapper:
     def __init__(self):
         pass
 
-    def getValidHostIds(discovered_hosts) -> Tuple[bool,list]:
+    def getHostIds(discovered_hosts) -> Tuple[bool,list]:
         for i in discovered_hosts:
-            valid_hosts.append(i["hostid"])
+            manage_host_ids.append(i["hostid"])
 
-        return valid_hosts    
+        return manage_host_ids    
 
     if __name__ == "__main__":
         PARSER = argparse.ArgumentParser(description=__doc__,
@@ -43,14 +43,14 @@ class AutoManageCompliantHostsWrapper:
                                                     vCenterUUID=ARGS.vcUUID, compliance_filter=compliance_filter)  
             success,response = hostmgmtcompliancehelper.get_managed_hosts_compliance()
             if success:
-                valid_hosts = getValidHostIds(response)
+                manage_host_ids = getHostIds(response)
 
         jobname = f"API ManageJob-{time.ctime()}"
-        if len(valid_hosts) > 0:
+        if len(manage_host_ids) > 0:
             hostmgmthelper = HostsManagementWrapper()
             hostmgmthelper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, \
                                                 vCenterUUID=ARGS.vcUUID, payload={}, jobname=jobname, \
-                                                jobdescription=None, host_ids=valid_hosts)
+                                                jobdescription=None, host_ids=manage_host_ids)
             print(hostmgmthelper.run_manage_job())
 
         else:
