@@ -60,7 +60,10 @@ class LicenseDetails:
         if isinstance(_idrac_license_expiration_date, Unset):
             idrac_license_expiration_date = UNSET
         else:
-            idrac_license_expiration_date = isoparse(_idrac_license_expiration_date)
+            if _idrac_license_expiration_date is None:
+                idrac_license_expiration_date = None
+            else:
+                idrac_license_expiration_date = isoparse(_idrac_license_expiration_date)
 
         license_entitlement_id = d.pop("licenseEntitlementID", UNSET)
 
