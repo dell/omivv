@@ -4,13 +4,13 @@ import time
 import base64
 import re
 import constants
-from Python.omevv.v1.omevv_apis_client.models import Credential, ShareCredential
-from  Python.omevv.v1.omevv_apis_client.models import ErrorObject,protocol_type,profile_type
-from  Python.omevv.v1.omevv_apis_client.api.repository_management import create_repository_profile
-from  Python.omevv.v1.omevv_apis_client import AuthenticatedClient
-from  Python.omevv.v1.omevv_apis_client.types import Response,UNSET
-from  typing import Any, Dict, List, Optional, Union
-from  Python.omevv.v1.omevv_apis_client.models.create_repository_profile_request import CreateRepositoryProfileRequest
+from omevv_apis_client.models import Credential, ShareCredential
+from omevv_apis_client.models import ErrorObject,protocol_type,profile_type
+from omevv_apis_client.api.repository_management import create_repository_profile
+from omevv_apis_client import AuthenticatedClient
+from omevv_apis_client.types import Response,UNSET
+from typing import Any, Dict, List, Optional, Union
+from omevv_apis_client.models.create_repository_profile_request import CreateRepositoryProfileRequest
 
 
 
