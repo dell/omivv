@@ -113,12 +113,12 @@ if __name__ == "__main__":
     uuid = args['uuid'];
 
     if args['protocol'] == "CIFS" and args['spcred'] == "":
-        print('credential missing for sharedpath for CISF protocol')
+        print('credential missing for sharedpath for CIFS protocol')
     if args['profilename'] == "" and args['profilename'] is None:
         print('Profilename is a required parameter.Please pass a value for the same')
     obj = CreateRepo(ome_ip,omevv_user_name,omevv_cred,uuid)
     if (obj.validate_path(args["protocol"], args["sharepath"]) is not True):
-        print('Please pass valid sharedpath location for the provided protocl type')
+        print('Please pass valid sharedpath location for the provided protocol type')
 
     obj.create_payload(args["profilename"],args["description"],args["profileType"],args["sharepath"],args["protocol"],args['spcred'],args["certificateCheck"],args["domain"])
     print(obj.create_repo_profile())
