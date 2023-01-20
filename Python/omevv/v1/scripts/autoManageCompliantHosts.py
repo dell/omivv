@@ -45,8 +45,8 @@ class AutoManageCompliantHostsWrapper:
             if success:
                 manage_host_ids = getHostIds(response)
 
-        jobname = f"API ManageJob-{time.ctime()}"
         if len(manage_host_ids) > 0:
+            jobname = f"API ManageJob-{time.ctime()}"
             hostmgmthelper = HostsManagementWrapper()
             hostmgmthelper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, \
                                                 vCenterUUID=ARGS.vcUUID, payload={}, jobname=jobname, \
