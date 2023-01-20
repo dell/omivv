@@ -1,19 +1,16 @@
 import argparse
 import sys
 import time
-import warnings
 import base64
-import constants
-from webbrowser import get
 import re
-from omevv.v1.omevv_apis_client.models import Credential, ShareCredential
-from omevv.v1.omevv_apis_client.models import ManagedHost
-from omevv.v1.omevv_apis_client.models import ErrorObject,protocol_type,profile_type,share_credential
-from omevv.v1.omevv_apis_client.api.repository_management import create_repository_profile
-from omevv.v1.omevv_apis_client import AuthenticatedClient
-from omevv.v1.omevv_apis_client.types import Response,UNSET
-from typing import Any, Dict, List, Optional, Union
-from omevv.v1.omevv_apis_client.models.create_repository_profile_request import CreateRepositoryProfileRequest
+import constants
+from Python.omevv.v1.omevv_apis_client.models import Credential, ShareCredential
+from  Python.omevv.v1.omevv_apis_client.models import ErrorObject,protocol_type,profile_type
+from  Python.omevv.v1.omevv_apis_client.api.repository_management import create_repository_profile
+from  Python.omevv.v1.omevv_apis_client import AuthenticatedClient
+from  Python.omevv.v1.omevv_apis_client.types import Response,UNSET
+from  typing import Any, Dict, List, Optional, Union
+from  Python.omevv.v1.omevv_apis_client.models.create_repository_profile_request import CreateRepositoryProfileRequest
 
 
 
@@ -25,9 +22,10 @@ class CreateRepo:
         credential = Credential(username=omevv_user, password=omevv_pswd)
         appendedcredential = credential.username + ":" + credential.password
         basicAuth = "Basic %s" % base64.b64encode(appendedcredential.encode('utf-8')).decode()
+        self.headers = {constants.vcGuidHeader: uuid}
         self.headers["Authorization"] = basicAuth
         self.headers["Content-Type"] = 'application/json'
-        self.headers['x_omivv-api-vcenter-identifier'] = uuid
+
         self.omeIp = ome_ip;
         self.uuid = uuid
         self.retry = 3
@@ -113,12 +111,12 @@ if __name__ == "__main__":
     uuid = args['uuid'];
 
     if args['protocol'] == "CIFS" and args['spcred'] == "":
-        print('credential missing for sharedpath for CIFS protocol')
+        print('credential missing for sharedpath for CISF protocol')
     if args['profilename'] == "" and args['profilename'] is None:
         print('Profilename is a required parameter.Please pass a value for the same')
     obj = CreateRepo(ome_ip,omevv_user_name,omevv_cred,uuid)
     if (obj.validate_path(args["protocol"], args["sharepath"]) is not True):
-        print('Please pass valid sharedpath location for the provided protocol type')
+        print('Please pass valid sharedpath location for the provided protocl type')
 
     obj.create_payload(args["profilename"],args["description"],args["profileType"],args["sharepath"],args["protocol"],args['spcred'],args["certificateCheck"],args["domain"])
     print(obj.create_repo_profile())
