@@ -15,7 +15,6 @@ from omevv_apis_client.models.console_create_request import ConsoleCreateRequest
 from omevv_apis_client.models.console import Console
 from omevv_apis_client.models.console_provider_type import ConsoleProviderType
 
-import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 retry = 3
