@@ -1,18 +1,13 @@
-from typing import Any, Dict, List, Optional, Union
 import argparse
 from omevv_apis_client import AuthenticatedClient
 from omevv_apis_client.api.group_inventory import get_managed_hosts_firmware_inventory_by_group
-from omevv_apis_client.models import ManagedHost
 from omevv_apis_client.models import GroupFirmwareInventoryCollectionModel
-from omevv_apis_client.models import ErrorObject
 from omevv_apis_client.models import Credential
 import constants
 import base64
-import pandas as pd
 from omevv_apis_client.types import Response
 import utilities as utility_object
 import json
-
 
 class GroupFirmwareInvWrapper:
     def __init__(self, base_url, vcUsercredential, vCenterUUID, omevv_Group_id):
