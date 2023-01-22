@@ -28,8 +28,11 @@ class GroupFirmwareInvWrapper:
 
     def get_managed_hosts_firmware_inventory_by_group(self):
         response: Response[GroupFirmwareInventoryCollectionModel] = \
-            get_managed_hosts_firmware_inventory_by_group.sync_detailed(uuid=self.uuid, client=self.client,
-                                                                        omevv_group_id=self.omevv_group_id)
+            get_managed_hosts_firmware_inventory_by_group.sync_detailed(uuid=self.uuid,
+                                                                        client=self.client,
+                                                                        omevv_group_id=self.omevv_group_id,
+                                                                        skip=0,
+                                                                        top=100)
         if response.status_code == 404:
             print("ERROR: The server cannot find the requested resource, check provided OME appliance IP is valid")
             exit(1)
@@ -52,7 +55,7 @@ if __name__ == "__main__":
                         help="OMEVV group ID of the cluster, only group ID will be accepted")
     ARGS = PARSER.parse_args()
 
-    if ARGS.ip is not None and ARGS is not None and ARGS.vcpassword is not None and ARGS.vcUUID is not None \
+    if ARGS.ip is not None and ARGS.vcusername is not None and ARGS.vcpassword is not None and ARGS.vcUUID is not None \
             and ARGS.omevv_group_id is not None:
         base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
         credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
@@ -70,8 +73,8 @@ if __name__ == "__main__":
                           "Version": each['firmware']['version'],
                           "Installation Date": each['firmware']['installationDate']
                           } for each in list_data]
-            print("Output here-----------", list_data)
             utility_object.Utilities().write_to_csv(list_data, "GroupFirmwareInventory.csv")
+            print("Output is exported to GroupFirmwareInventory.csv file")
 
         else:
             print("ERROR: Unable to get firmware inventory of the cluster.")
