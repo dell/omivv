@@ -82,7 +82,7 @@ class RepoDetails:
                 raise Exception("Error Occured while fetching the console list ", response)
 
         except Exception as e:
-            print("Exception occured while creating repo ", e, " retrying ..");
+            print("Exception occured while getting consoles list ", e, " retrying ..");
             if self.retry > 0:
                 self.retry = self.retry - 1
                 time.sleep(5)
