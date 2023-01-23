@@ -11,15 +11,15 @@ import requests,json,base64
 
 class RepoDetails:
     def __init__(self,omivv_ip,omivv_username,omivv_pwd,domain):
-        self.omevv_username = omivv_username.strip()
+        self.omivv_username = omivv_username.strip()
         self.headers = {'content-type': 'application/json'}
         self.domain = domain
-        self.omevv_password = omivv_pwd.strip()
-        self.login_url = "https://%s/Spectre/api/rest/v1/Services/AuthenticationService/login"%(omevv_ip)
-        self.console_url = "https://%s/Spectre/api/rest/v1/Services/ConsoleService/Consoles"%(omevv_ip)
-        self.context_url = "https://%s/Spectre/api/rest/v1/Services/ConsoleService/OperationalContext"%(omevv_ip)
-        self.repo_url = "https://%s/Spectre/api/rest/v1/Services/PluginProfileService/RepositoryProfiles"%(omevv_ip)
-        self.omevv_encoded_cred = self.encode_cred(self.omivv_username, self.omivv_password)
+        self.omivv_password = omivv_pwd.strip()
+        self.login_url = "https://%s/Spectre/api/rest/v1/Services/AuthenticationService/login"%(omivv_ip)
+        self.console_url = "https://%s/Spectre/api/rest/v1/Services/ConsoleService/Consoles"%(omivv_ip)
+        self.context_url = "https://%s/Spectre/api/rest/v1/Services/ConsoleService/OperationalContext"%(omivv_ip)
+        self.repo_url = "https://%s/Spectre/api/rest/v1/Services/PluginProfileService/RepositoryProfiles"%(omivv_ip)
+        self.omivv_encoded_cred = self.encode_cred(self.omivv_username, self.omivv_password)
         self.payload_cred_dict= {}
         self.payload_cred_dict['console'] = 'consoleUserCredential'
         self.payload_cred_dict['api'] = 'apiUserCredential'
@@ -49,8 +49,8 @@ class RepoDetails:
 
     def create_login(self):
        bearer_token = ""
-       self.headers['Authorization'] = self.omevv_encoded_cred
-       cred_json = self.create_payload(self.omevv_username,self.omevv_password,self.domain,"api")
+       self.headers['Authorization'] = self.omivv_encoded_cred
+       cred_json = self.create_payload(self.omivv_username,self.omivv_password,self.domain,"api")
        response = requests.post(self.login_url, data=json.dumps(cred_json), headers=self.headers, verify=False);
        data = response.json();
        status_code = response.status_code
@@ -168,10 +168,10 @@ if __name__ == "__main__":
     if args['cname'] == "" and args['cip'] == "":
         print('Console ip or Console Name is required.Please pass one of them');
 
-    omevv_ip = args['ip'];
-    omevv_user = args['user'];
-    omevv_pswd = args['pswd'];
-    omevv_domain = args['domain'];
+    omivv_ip = args['ip'];
+    omivv_user = args['user'];
+    omivv_pswd = args['pswd'];
+    omivv_domain = args['domain'];
     console_username = args['cuser']
     console_domain = args['cdomain']
     console_pwd = args['cpwd']
@@ -180,7 +180,7 @@ if __name__ == "__main__":
     repo_prof_file_det = args['repoProfileFilePath']
     console_file_det = args['consoleFilePath']
 
-    repoObj = RepoDetails(omevv_ip,omevv_user,omevv_pswd,omevv_domain)
+    repoObj = RepoDetails(omivv_ip,omivv_user,omivv_pswd,omivv_domain)
     util = Utilities()
     try:
         console_list = repoObj.get_console_details()
