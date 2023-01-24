@@ -22,14 +22,14 @@ class Schedule:
 
     def to_dict(self) -> Dict[str, Any]:
         run_now = self.run_now
-        date_time = self.date_time.isoformat()
+        if run_now is False: date_time = self.date_time.isoformat()  # Added to handle the run now job
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
                 "runNow": run_now,
-                "dateTime": date_time,
+                "dateTime": date_time if run_now is False else None,  # Added to handle the run now job
             }
         )
 
@@ -40,12 +40,17 @@ class Schedule:
         d = src_dict.copy()
         run_now = d.pop("runNow")
 
-        date_time = isoparse(d.pop("dateTime"))
-
-        schedule = cls(
-            run_now=run_now,
-            date_time=date_time,
-        )
+        if run_now is False: date_time = isoparse(d.pop("dateTime"))  # Added to handle the run now job
+        # Added below logic to hand the run now job
+        if run_now is False:
+            schedule = cls(
+                run_now=run_now,
+            )
+        else:
+            schedule = cls(
+                run_now=run_now,
+                date_time=date_time
+            )
 
         schedule.additional_properties = d
         return schedule

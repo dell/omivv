@@ -190,15 +190,22 @@ class Job:
         next_run: Union[Unset, datetime.datetime]
         if isinstance(_next_run, Unset):
             next_run = UNSET
-        else:
-            next_run = isoparse(_next_run)
+        else:  # Added below code to handle when next_is is none
+            if _next_run is None:
+                next_run = None
+            else:
+                next_run = isoparse(_next_run)
 
         _last_run = d.pop("lastRun", UNSET)
         last_run: Union[Unset, datetime.datetime]
         if isinstance(_last_run, Unset):
             last_run = UNSET
-        else:
-            last_run = isoparse(_last_run)
+        else:  # Added below code to handle when next_is is none
+            if _last_run is None:
+                last_run = None
+            else:
+                last_run = isoparse(_last_run)
+
 
         enabled = d.pop("enabled", UNSET)
 
