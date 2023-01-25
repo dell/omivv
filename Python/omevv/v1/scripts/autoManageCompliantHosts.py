@@ -16,7 +16,7 @@ class AutoManageCompliantHostsWrapper:
     def __init__(self):
         pass
 
-    def getHostIds(discovered_hosts) -> Tuple[bool,list]:
+    def getHostIds(self, discovered_hosts) -> Tuple[bool,list]:
         for i in discovered_hosts:
             manage_host_ids.append(i["hostid"])
 
@@ -37,13 +37,14 @@ if __name__ == "__main__":
     base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
     credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
     hostmgmtcompliancehelper = HostManagementComplianceWrapper()
-    
+    automanagecomplianthosthelper = AutoManageCompliantHostsWrapper()
+
     for compliance_filter in ["COMPLIANT","NONCOMPLIANT"]:        
         hostmgmtcompliancehelper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, \
                                                 vCenterUUID=ARGS.vcUUID, compliance_filter=compliance_filter)  
         success,response = hostmgmtcompliancehelper.get_managed_hosts_compliance()
         if success:
-            manage_host_ids = getHostIds(response)
+            manage_host_ids = automanagecomplianthosthelper.getHostIds(response)
 
     if len(manage_host_ids) > 0:
         jobname = f"API ManageJob-{time.ctime()}"
