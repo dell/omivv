@@ -45,7 +45,8 @@ class LicenseImport:
         self.payload = {}
 
     def create_payload(self, licensename, shareip, sharetype, sharename, shareuname=None, sharepwd=None, workgroup=None,
-                       ignorecertwarning=False):
+                       ignorecertwarning=False,retry=2):
+        self.retry=retry
         self.payload = {"FQDD": "iDRAC.Embedded.1", "ImportOptions": "Force", "UserName": shareuname,
                         "ShareType": sharetype,
                         "ShareName": sharename, "Password": sharepwd, "IPAddress": shareip, "LicenseName": licensename,
@@ -107,7 +108,7 @@ class LicenseImport:
         return flag
 
     def import_idrac_license_network_share(self,idrac_ip, idrac_uname, idrac_pwd,payload, retry=2):
-        self.retry = retry
+
         self.idrac_ip = idrac_ip
         self.idrac_uname = idrac_uname
         self.idrac_pwd = idrac_pwd
@@ -199,7 +200,7 @@ if __name__ == "__main__":
                                         sharetype=args["sharetype"],
                                         shareuname=args["username"], sharepwd=args["password"],
                                         workgroup=args["workgroup"],
-                                        ignorecertwarning=args["ignorecertwarning"], sharename=args["sharename"])
+                                        ignorecertwarning=args["ignorecertwarning"], sharename=args["sharename"],retry=args["retry"])
 
     job_id = licenseobj.import_idrac_license_network_share(idrac_ip=args["ip"], idrac_uname=args["u"], idrac_pwd=args["p"],payload=payload, retry=args["retry"])
 

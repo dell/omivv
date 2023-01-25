@@ -24,13 +24,31 @@ Description: BaselineProfile. Creating a Baseline profile in OMEVVP
 
 script_examples:
 1. this example will CreateBaselineProfile with job schedule for monday,tuesday at time 14:15
-python CreateBaselineProfile.py -ip 192.168.0.120 -vcuser <vc username> -name <baseline profile name> -desc ExampleBaselineProfile -vcpass <vc password> -vcuuid <vcuuid> -frid <Firmware repoid> -gid <groupid> -jsd monday,tuesday -jst 14:15 -retry 4
+python createBaselineProfile.py -ip 192.168.0.120 -vcuser <vc username> -name <baseline profile name> -desc ExampleBaselineProfile -vcpass <vc password> -vcuuid <vcuuid> -frid <Firmware repoid> -gid <groupid> -jsd monday,tuesday -jst 14:15 -retry 4
+
+2. this example will CreateBaselineProfile with default job schedule sunday at time 03:00
+python createBaselineProfile.py -ip 192.168.0.120 -vcuser <vc username> -name <baseline profile name> -vcpass <vc password> -vcuuid <vcuuid> -frid <Firmware repoid> -gid <groupid>
+
+3. To view the help menu for list of args to be passed:
+    python createBaselineProfile.py -h
 
 '''
 
-import requests, json,time, warnings, argparse
+import time, warnings
 import base64
 warnings.filterwarnings("ignore")
+import argparse
+
+
+from omevv_apis_client import AuthenticatedClient
+from omevv_apis_client.api.baseline_profile_management import create_baseline_profiles
+from omevv_apis_client.models import BaselineProfileCreateRequest,DaysAndTimeOfWeek
+from omevv_apis_client.models import ErrorObject
+from omevv_apis_client.types import Response,UNSET
+
+import constants
+from typing import Any, Dict, List, Optional, Union
+
 
 
 class CreateBaselineProfile:
@@ -42,7 +60,7 @@ class CreateBaselineProfile:
 
 
     #<--- Function to get user inputs--->
-    def create_payload(self,name,description,firmware_repoid,driver_repoid,time,retry,configuration_repoid=None,createdby=None,group_idslist=[],jobschedule_days="Sunday"):
+    def create_payload(self,name,description,firmware_repoid,driver_repoid,time,retry,configuration_repoid,createdby,jobschedule_days,group_idslist=[]):
         self.retry = retry
 
         self.payload = {
@@ -60,11 +78,11 @@ class CreateBaselineProfile:
                 "thursday": False,
                 "friday": False,
                 "saturday": False,
-                "sunday": True,
+                "sunday": False,
                 "time": time
             }
         }
-
+        print(jobschedule_days)
         #jobscheduledays
         if jobschedule_days:
             #When multiple days are mentioned
@@ -77,17 +95,19 @@ class CreateBaselineProfile:
                         print("\n FAIL, either missing argument or incorrect argument used. Please check script help-text for jsd.")
                         print("\n Proceeding with default value for jobschedule-day")
             else:
-                if self.payload["jobSchedule"].get(jobschedule_days):
+                if (self.payload["jobSchedule"].get(jobschedule_days,None)) !=None:
                     self.payload["jobSchedule"][jobschedule_days]= True
                 else:
                     print("\n INFO, incorrect argument value for jobschedule-day. Please check script help-text for jsd.")
                     print("\n Proceeding with default value for jobschedule-day")
 
-        #Removing the items in payload with None values
-        self.payload = {k: v for k, v in self.payload.items() if v}
 
-        print("\n Payload is: {}".format(self.payload))
-        return self.payload
+
+        self.day_of_week_obj=DaysAndTimeOfWeek(monday=self.payload["jobSchedule"]["monday"],tuesday=self.payload["jobSchedule"]["tuesday"],wednesday=self.payload["jobSchedule"]["wednesday"],thursday=self.payload["jobSchedule"]["thursday"],friday=self.payload["jobSchedule"]["friday"],saturday=self.payload["jobSchedule"]["saturday"],sunday=self.payload["jobSchedule"]["sunday"],time=self.payload["jobSchedule"]["time"])
+
+        self.create_baseline_payload_obj = BaselineProfileCreateRequest(name=name,description=description,firmware_repo_id=firmware_repoid,driver_repo_id=driver_repoid,configuration_repo_id=configuration_repoid,created_by=createdby,group_ids=group_idslist,job_schedule=self.day_of_week_obj)
+        print("\n payload attributes - ", self.create_baseline_payload_obj)
+
 
 
 
@@ -99,20 +119,26 @@ class CreateBaselineProfile:
         self.omevv_ip=omevv_ip
         self.vc_uuid=vc_uuid
 
+
         try:
             credential = self.vc_username + ":" + self.vc_pwd
             self.encoded_vc_cred = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
             self.headers["Authorization"] = self.encoded_vc_cred
-            self.headers.update({"x_omivv-api-vcenter-identifier": vc_uuid})
+            self.headers.update({constants.vcGuidHeader: vc_uuid})
 
-            self.config_url = "https://" + self.omevv_ip
-            self.baseline_profile_url = "/omevv/GatewayService/v1/Consoles/%s/BaselineProfiles" %(self.vc_uuid)
+
+
+            self.base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=self.omevv_ip)
+            self.client = AuthenticatedClient(base_url=self.base_url, token=None, verify_ssl=False). \
+                with_headers(headers=self.headers) . \
+                with_timeout(constants.generalTimeOut_sec)
 
             method = "CreateBaselineProfile"
+            response: Response[Union[ErrorObject, int]] = create_baseline_profiles.sync_detailed(client=self.client,json_body=self.create_baseline_payload_obj,uuid=self.vc_uuid)
+            print("\n Response - ",response)
 
-            response = requests.post(url=self.config_url+self.baseline_profile_url, data=json.dumps(payload), headers=self.headers, verify=False)
 
-            data = response.json()
+            data = response.parsed
             status_code = response.status_code
             if response.status_code == 200:
                 print("\n- PASS: POST command passed for %s method, status code %s returned\n" % (
@@ -131,7 +157,7 @@ class CreateBaselineProfile:
 
             self.baseline_profileid = data
             if not (self.baseline_profileid):
-                print("- FAIL, unable to find job ID in POST response, response output is:\n%s" % data)
+                print("- FAIL, unable to find baselineprofile ID in POST response, response output is:\n%s" % data)
                 return ""
 
             print("- PASS, Baseline ProfileID %s is successfully created for %s method\n" % (self.baseline_profileid, method))
@@ -160,23 +186,24 @@ if __name__ == "__main__":
     parser.add_argument("-vcpass", required=True, help="password of vcenter", default=None)
     parser.add_argument("-vcuuid", required=True, help="UUID of the relevant vCenter", default=None)
 
-    parser.add_argument('-name', help="Name of the baseline profile.", required=True)
-    parser.add_argument('-desc', help="Description for the baseline profile.", required=False)
+    parser.add_argument('-name', help="Name of the baseline profile.", required=True,default=None)
+    parser.add_argument('-desc', help="Description for the baseline profile.", required=False,default=None)
 
     parser.add_argument('-frid', help="Firmware repository ID <integer> to associate the baseline profile",
-                        required=True, type=int)
+                        required=True,default=None)
     parser.add_argument('-drid', help="driver repository ID <integer> to associate the baseline profile",
-                        required=False, type=int)
+                        required=False,default=None)
     parser.add_argument('-crid', help="configurationRepoId <integer> to associate the baseline profile",
-                        required=False, type=int)
+                        required=False,default=None)
 
-    parser.add_argument('-cb', help="Created user, if not provided it is OMEVV by default", required=False)
-    parser.add_argument('-gid', help="Pass in the groupId's e.g 1111", required=True, type=int,nargs='+')
+    parser.add_argument('-cb', help="Created user, if not provided it is OMEVV by default", required=False,default=None)
+
+    parser.add_argument('-gid', help="Pass in the groupId's e.g 1111", required=True,nargs='+')
 
     parser.add_argument("-jsd", help="job schedule - Enable days of the week for baseline profile job schedule."
                                       "Supported values are: monday,tuesday,wednesday,thursday,friday,saturday,sunday"
                                        "If you pass in multiple string values, make sure to use comma separator Default:sunday",
-                        required=False)
+                        required=False,default="sunday")
 
     parser.add_argument("-jst", required=False,
                         help="Specify time for baseline profile job schedule-in 24 HR format: HH:SS. default value - 03:00",default="03:00")
@@ -199,7 +226,6 @@ if __name__ == "__main__":
 
     if not(baselineprofile_id):
         print("- FAIL:The Creation of Baseline Profile is not successful")
-
 
 
 
