@@ -22,36 +22,36 @@ class AutoManageCompliantHostsWrapper:
 
         return manage_host_ids    
 
-    if __name__ == "__main__":
-        PARSER = argparse.ArgumentParser(description=__doc__,
-                                         formatter_class=argparse.RawTextHelpFormatter)
-        PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-        PARSER.add_argument("--vcusername", "-u", required=True,
-                            help="username of vcenter")
-        PARSER.add_argument("--vcpassword", "-p", required=True,
-                            help="password of vcenter")
-        PARSER.add_argument("--vcUUID", "-d", required=True, default=None,
-                            help="UUID of the relevant vCenter")
-        ARGS = PARSER.parse_args()
+if __name__ == "__main__":
+    PARSER = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawTextHelpFormatter)
+    PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
+    PARSER.add_argument("--vcusername", "-u", required=True,
+                        help="username of vcenter")
+    PARSER.add_argument("--vcpassword", "-p", required=True,
+                        help="password of vcenter")
+    PARSER.add_argument("--vcUUID", "-d", required=True, default=None,
+                        help="UUID of the relevant vCenter")
+    ARGS = PARSER.parse_args()
 
-        base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
-        credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
-        hostmgmtcompliancehelper = HostManagementComplianceWrapper()
-        
-        for compliance_filter in ["COMPLIANT","NONCOMPLIANT"]:        
-            hostmgmtcompliancehelper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, \
-                                                    vCenterUUID=ARGS.vcUUID, compliance_filter=compliance_filter)  
-            success,response = hostmgmtcompliancehelper.get_managed_hosts_compliance()
-            if success:
-                manage_host_ids = getHostIds(response)
+    base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ARGS.ip)
+    credential = Credential(username=ARGS.vcusername, password=ARGS.vcpassword)
+    hostmgmtcompliancehelper = HostManagementComplianceWrapper()
+    
+    for compliance_filter in ["COMPLIANT","NONCOMPLIANT"]:        
+        hostmgmtcompliancehelper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, \
+                                                vCenterUUID=ARGS.vcUUID, compliance_filter=compliance_filter)  
+        success,response = hostmgmtcompliancehelper.get_managed_hosts_compliance()
+        if success:
+            manage_host_ids = getHostIds(response)
 
-        if len(manage_host_ids) > 0:
-            jobname = f"API ManageJob-{time.ctime()}"
-            hostmgmthelper = HostsManagementWrapper()
-            hostmgmthelper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, \
-                                                vCenterUUID=ARGS.vcUUID, payload={}, jobname=jobname, \
-                                                jobdescription=None, host_ids=manage_host_ids)
-            print(hostmgmthelper.run_manage_job())
+    if len(manage_host_ids) > 0:
+        jobname = f"API ManageJob-{time.ctime()}"
+        hostmgmthelper = HostsManagementWrapper()
+        hostmgmthelper.create_payload(base_url=base_url, omeIp=ARGS.ip, vcUsercredential=credential, \
+                                            vCenterUUID=ARGS.vcUUID, payload={}, jobname=jobname, \
+                                            jobdescription=None, host_ids=manage_host_ids)
+        print(hostmgmthelper.run_manage_job())
 
-        else:
-            print("No Discovered Hosts available to be Managed. Please see Management Compliance State for Reason.")
+    else:
+        print("No Discovered Hosts available to be Managed. Please see Management Compliance State for Reason.")
