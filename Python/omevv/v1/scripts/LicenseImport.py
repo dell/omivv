@@ -4,14 +4,19 @@
 # _author_ = Ramya.R <Ramya.R@Dell.com>
 # _version_ = 1.0
 #
-# Copyright (c) 2022, Dell, Inc.
+# Copyright (c) 2023 Dell EMC Corporation
 #
-# This software is licensed to you under the GNU General Public License,
-# version 2 (GPLv2). There is NO WARRANTY for this software, express or
-# implied, including the implied warranties of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE. You should have received a copy of GPLv2
-# along with this software; if not, see
-# http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 
 '''
@@ -45,7 +50,8 @@ class LicenseImport:
         self.payload = {}
 
     def create_payload(self, licensename, shareip, sharetype, sharename, shareuname=None, sharepwd=None, workgroup=None,
-                       ignorecertwarning=False):
+                       ignorecertwarning=False,retry=3):
+        self.retry=retry
         self.payload = {"FQDD": "iDRAC.Embedded.1", "ImportOptions": "Force", "UserName": shareuname,
                         "ShareType": sharetype,
                         "ShareName": sharename, "Password": sharepwd, "IPAddress": shareip, "LicenseName": licensename,
@@ -56,7 +62,7 @@ class LicenseImport:
         print("\n Payload is: {}".format(self.payload))
         return self.payload
 
-    def check_job_status(self, job_id, retry=2):
+    def check_job_status(self, job_id, retry=3):
         flag = False
         self.retry = retry
         start_time = datetime.now()
@@ -98,7 +104,7 @@ class LicenseImport:
                     print("- WARNING, JobStatus not completed, current job status execution time is: \"%s\"" % (
                         str(current_time)[0:7]))
         except Exception as e:
-            print("\n- FAIL: Exception %s occured" % e)
+            print("\n- FAIL: Exception occured- %s " % e)
             if retry > 0:
                 retry = retry - 1
                 time.sleep(5)
@@ -106,8 +112,8 @@ class LicenseImport:
 
         return flag
 
-    def import_idrac_license_network_share(self,idrac_ip, idrac_uname, idrac_pwd,payload, retry=2):
-        self.retry = retry
+    def import_idrac_license_network_share(self,idrac_ip, idrac_uname, idrac_pwd,payload, retry=3):
+
         self.idrac_ip = idrac_ip
         self.idrac_uname = idrac_uname
         self.idrac_pwd = idrac_pwd
@@ -148,7 +154,7 @@ class LicenseImport:
             print("- PASS, job ID %s successfuly created for %s method\n" % (self.job_id, method))
 
         except Exception as e:
-            print("\n- FAIL: Exception %s occured" % e)
+            print("\n- FAIL: Exception occured- %s " % e)
             if retry > 0:
                 retry = retry - 1
                 time.sleep(5)
@@ -189,7 +195,7 @@ if __name__ == "__main__":
                         help='Pass in name of the license file on the network share you want to import',
                         required=True)
     parser.add_argument('-retry',
-                        help='Pass in the number of times the command needs to be re-tried in case of exception. The default value is retry=2',
+                        help='Pass in the number of times the command needs to be re-tried in case of exception. The default value is retry=3',
                         required=False, type=int)
     args = vars(parser.parse_args())
 
@@ -199,7 +205,7 @@ if __name__ == "__main__":
                                         sharetype=args["sharetype"],
                                         shareuname=args["username"], sharepwd=args["password"],
                                         workgroup=args["workgroup"],
-                                        ignorecertwarning=args["ignorecertwarning"], sharename=args["sharename"])
+                                        ignorecertwarning=args["ignorecertwarning"], sharename=args["sharename"],retry=args["retry"])
 
     job_id = licenseobj.import_idrac_license_network_share(idrac_ip=args["ip"], idrac_uname=args["u"], idrac_pwd=args["p"],payload=payload, retry=args["retry"])
 
