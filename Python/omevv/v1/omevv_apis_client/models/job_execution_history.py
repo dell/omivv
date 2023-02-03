@@ -89,7 +89,7 @@ class JobExecutionHistory:
         end_time: Union[Unset, datetime.datetime]
         if isinstance(_end_time, Unset):
             end_time = UNSET
-        else:  # Added below code to handle when next_is is none
+        else:  # Added below code to handle when _end_time is none
             if _end_time is None:
                 end_time = None
             else:

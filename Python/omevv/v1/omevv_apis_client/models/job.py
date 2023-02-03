@@ -190,7 +190,7 @@ class Job:
         next_run: Union[Unset, datetime.datetime]
         if isinstance(_next_run, Unset):
             next_run = UNSET
-        else:  # Added below code to handle when next_is is none
+        else:  # Added below code to handle when _next_run is none
             if _next_run is None:
                 next_run = None
             else:
@@ -200,7 +200,7 @@ class Job:
         last_run: Union[Unset, datetime.datetime]
         if isinstance(_last_run, Unset):
             last_run = UNSET
-        else:  # Added below code to handle when next_is is none
+        else:  # Added below code to handle when _last_run is none
             if _last_run is None:
                 last_run = None
             else:
