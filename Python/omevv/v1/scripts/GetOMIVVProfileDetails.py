@@ -24,40 +24,47 @@ class ProfileDetails:
         self.retry = 3
         # Generating the bearer token to be used in this script
         self.headers['Authorization'] = self.omivv_encoded_cred
-        cred_json = self.create_payload(self.omivv_username, self.omivv_password, self.domain, "api")
-        response = requests.post(self.login_url, data=json.dumps(cred_json), headers=self.headers, verify=False);
-        data = response.json();
-        status_code = response.status_code
-        if status_code == 200:
-            print("Successfully logged in");
-            self.bearer_token = data["accessToken"];
-        else:
-            raise Exception("Error occurred while logging in ", data);
 
-    def logoff_with_omivv(self):
+    def get_bearer_token(self):
+        """Create bearer token"""
+        try:
+            post_body_data = {"apiUserCredential": {"username": self.omivv_username,
+                                                  "domain": "",
+                                                  "password": self.omivv_password}}
+            response = requests.post(self.login_url, json=post_body_data, verify=False)
+            if response.status_code == 200:
+                json_response = response.json()
+                bearer_token = json_response['accessToken']
+                return bearer_token
+            else:
+                print("Login to OMIVV failed")
+        except:
+            print("get_bearer_token: Unexpected error:", sys.exc_info()[0])
+
+    def logout(self, session_token):
         """Log off OMIVV bearer token"""
-        self.headers['Authorization'] = 'Bearer %s' % self.bearer_token
-        json_response = requests.post(url=self.logoff_url, headers={'Authorization': 'Bearer %s' % self.bearer_token},
-                                      verify=False)
-        if json_response.status_code == 200:
-            print("Bearer token logged off successful")
-        else:
-            print("Bearer token logged off failed")
+        try:
+            head = {'Authorization': 'Bearer ' + session_token}
+            response = requests.post(self.logoff_url, verify=False, headers=head)
+            if response.status_code != 200:
+                print("Log out failed.")
+        except:
+            print("get_bearer_token: Unexpected error:", sys.exc_info()[0])
 
-    def encode_cred(self,username, pwd):
+    def encode_cred(self, username, pwd):
         cred_str = username + ":" + pwd;
         cred_str_bytes = cred_str.encode("ascii");
         base64_bytes = base64.b64encode(cred_str_bytes);
         base64_string = base64_bytes.decode("ascii");
         return base64_string
 
-    def create_payload(self,username,pwd,domain,type):
+    def create_payload(self, username, pwd, domain, type):
         payload = {}
         cred_json = {"username": username.strip(), "domain": domain.strip(), "password": pwd.strip()};
         payload[self.payload_cred_dict[type]] = cred_json
         return payload
 
-    def create_context_payload(self,cid,console_username,console_domain,console_pwd):
+    def create_context_payload(self, cid, console_username, console_domain, console_pwd):
         payload = {}
         payload['consoleId'] = cid
         cred_json = {"username": console_username.strip(), "domain": console_domain.strip(),
@@ -65,11 +72,11 @@ class ProfileDetails:
         payload["consoleUserCredential"] = cred_json
         return payload
 
-    def get_console_details(self):
+    def get_console_details(self, bearer_token):
         console_list = []
 
         try:
-            cred_str = 'Bearer ' + self.bearer_token
+            cred_str = 'Bearer ' + bearer_token
             self.headers['Authorization'] = cred_str
             response = requests.get(self.console_url, headers=self.headers, verify=False)
             data = response.json();
@@ -87,18 +94,18 @@ class ProfileDetails:
             if self.retry > 0:
                 self.retry = self.retry - 1
                 time.sleep(5)
-                self.get_console_details()
+                self.get_console_details(bearer_token=bearer_token)
 
             else:
                 print("Failed after 3 retries,exiting")
 
         return console_list
 
-    def set_context(self, console_ip, console_hostname, console_username, console_domain, console_pwd):
+    def set_context(self, console_ip, console_hostname, console_username, console_domain, console_pwd, bearer_token):
         console_id = ""
         isContextSet = False
         try:
-            consoleList = self.get_console_details()
+            consoleList = self.get_console_details(bearer_token=bearer_token)
             for obj in consoleList:
                 if obj.ip == console_ip or obj.hostname == console_hostname:
                     console_id = obj.id
@@ -112,10 +119,12 @@ class ProfileDetails:
         except Exception as e:
             print(e)
 
-    def get_repoprof_details(self, console_ip, console_hostname, console_username, console_domain, console_pwd):
+    def get_repoprof_details(self, console_ip, console_hostname, console_username, console_domain, console_pwd,
+                             bearer_token):
         prof_list = []
         try:
-            self.set_context(console_ip, console_hostname, console_username, console_domain, console_pwd)
+            self.set_context(console_ip, console_hostname, console_username, console_domain, console_pwd,
+                             bearer_token=bearer_token)
             response = requests.get(self.repo_url, headers=self.headers, verify=False)
             data = response.json();
             status_code = response.status_code;
@@ -125,21 +134,23 @@ class ProfileDetails:
                     profobj = json.loads(s, object_hook=repoProfileDecoder)
                     prof_list.append(profobj)
             else:
-                raise Exception("Error Occured while fetching the repo profile details ",response)
+                raise Exception("Error Occurred while fetching the repo profile details ", response)
 
         except Exception as e:
-            print("Exception occured while creating repo ", e, " retrying ..");
+            print("Exception occurred while creating repo ", e, " retrying ..");
             if self.retry > 0:
                 self.retry = self.retry - 1
                 time.sleep(5)
-                self.get_repoprof_details(console_ip,console_hostname,console_username,console_domain,console_pwd)
+                self.get_repoprof_details(console_ip, console_hostname, console_username, console_domain, console_pwd,
+                                          bearer_token=bearer_token)
 
             else:
-                print("Failed after 3 retries,exiting")
+                print("Failed after 3 retries, exiting")
 
         return prof_list
 
-    def get_cluster_pro_details(self, console_ip, console_hostname, console_username, console_domain, console_pwd):
+    def get_cluster_pro_details(self, console_ip, console_hostname, console_username, console_domain, console_pwd,
+                                bearer_token):
         prof_list = []
         try:
             self.set_context(console_ip, console_hostname, console_username, console_domain, console_pwd)
@@ -159,7 +170,8 @@ class ProfileDetails:
             if self.retry > 0:
                 self.retry = self.retry - 1
                 time.sleep(5)
-                self.get_baseline_details(console_ip, console_hostname, console_username, console_domain, console_pwd)
+                self.get_cluster_pro_details(console_ip, console_hostname, console_username, console_domain, console_pwd,
+                                          bearer_token=bearer_token)
 
             else:
                 print("Failed after 3 retries,exiting")
@@ -183,7 +195,8 @@ if __name__ == "__main__":
     parser.add_argument('-repoProfileFilePath',
                         help='complete file path where the omivv repo profile details need to saved', required=False);
     parser.add_argument('-bpFilePath',
-                        help='complete file path where the omivv baseline profile details need to saved', required=False);
+                        help='complete file path where the omivv baseline profile details need to saved',
+                        required=False);
     parser.add_argument('-consoleFilePath', help='complete file path where the console details need to saved',
                         required=False);
     args = vars(parser.parse_args());
@@ -204,16 +217,17 @@ if __name__ == "__main__":
     baseline_prof_file_det = args['bpFilePath']
 
     profile_obj = ProfileDetails(omivv_ip, omivv_user, omivv_pswd, omivv_domain)
+    bearer_token = profile_obj.get_bearer_token()
     util = Utilities()
     try:
-        console_list = profile_obj.get_console_details()
+        console_list = profile_obj.get_console_details(bearer_token=bearer_token)
         if console_file_det is not None:
             util.write_to_csv(console_list, console_file_det)
     except Exception as e:
         print("Exception occurred ", e)
     try:
         repoList = profile_obj.get_repoprof_details(console_ip, console_hostname, console_username, console_domain,
-                                                    console_pwd)
+                                                    console_pwd, bearer_token=bearer_token)
         if repo_prof_file_det is not None:
             list_data = []
             for profile in repoList:
@@ -234,24 +248,26 @@ if __name__ == "__main__":
         print("Exception occurred ", e)
     # Get cluster profile detail
     try:
-        cluster_pro_list = profile_obj.get_cluster_pro_details(console_ip, console_hostname, console_username, console_domain,
-                                                         console_pwd)
+        cluster_pro_list = profile_obj.get_cluster_pro_details(console_ip, console_hostname, console_username,
+                                                               console_domain,
+                                                               console_pwd,
+                                                               bearer_token=bearer_token)
         if baseline_prof_file_det is not None:
             list_data = []
             for profile in cluster_pro_list:
                 profile_dict = dict(profile._asdict())
                 list_data.append(profile_dict)
             list_data = [{"id": each['id'],
-                              "href": each['href'],
-                              "objectType": each['objectType'],
-                              "profileName": each['profileName'],
-                              "description": each['description']
-                              } for each in list_data]
-            util.write_to_csv(list_data,baseline_prof_file_det)
+                          "href": each['href'],
+                          "objectType": each['objectType'],
+                          "profileName": each['profileName'],
+                          "description": each['description']
+                          } for each in list_data]
+            util.write_to_csv(list_data, baseline_prof_file_det)
         else:
             for cp in cluster_pro_list:
                 print(cp)
     except Exception as e:
         print("Exception occurred ", e)
 
-    profile_obj.logoff_with_omivv()
+    profile_obj.logout(bearer_token)
