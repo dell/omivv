@@ -89,8 +89,11 @@ class JobExecutionHistory:
         end_time: Union[Unset, datetime.datetime]
         if isinstance(_end_time, Unset):
             end_time = UNSET
-        else:
-            end_time = isoparse(_end_time)
+        else:  # Added below code to handle when _end_time is none
+            if _end_time is None:
+                end_time = None
+            else:
+                end_time = isoparse(_end_time)
 
         _updated_time = d.pop("updatedTime", UNSET)
         updated_time: Union[Unset, datetime.datetime]
