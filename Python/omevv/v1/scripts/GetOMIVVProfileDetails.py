@@ -1,4 +1,5 @@
 import argparse
+import sys
 import time
 from omivv_models import consoleDecoder, repoProfileDecoder, ClusterProfileDecoder
 from utilities import Utilities
@@ -153,7 +154,7 @@ class ProfileDetails:
                                 bearer_token):
         prof_list = []
         try:
-            self.set_context(console_ip, console_hostname, console_username, console_domain, console_pwd)
+            self.set_context(console_ip, console_hostname, console_username, console_domain, console_pwd, bearer_token)
             response = requests.get(self.baseline_url, headers=self.headers, verify=False)
             data = response.json();
             status_code = response.status_code;
