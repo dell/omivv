@@ -18,3 +18,6 @@ def consoleDecoder(consoleDict):
 
 def repoProfileDecoder(profileDict):
     return namedtuple('X', profileDict.keys())(*profileDict.values())
+
+def ClusterProfileDecoder(profileDict):
+    return namedtuple('X', profileDict.keys())(*profileDict.values())
