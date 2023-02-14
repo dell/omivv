@@ -12,11 +12,9 @@ from omevv_apis_client.types import Response,UNSET
 from typing import Any, Dict, List, Optional, Union
 from omevv_apis_client.models.create_repository_profile_request import CreateRepositoryProfileRequest
 
-
-
 class CreateRepo:
 
-    def __init__(self,ome_ip,omevv_user,omevv_pswd,uuid,):
+    def __init__(self,ome_ip,omevv_user,omevv_pswd,uuid):
         self.headers ={}
         self.payload = {}
         credential = Credential(username=omevv_user, password=omevv_pswd)
@@ -26,11 +24,11 @@ class CreateRepo:
         self.headers["Authorization"] = basicAuth
         self.headers["Content-Type"] = 'application/json'
 
-        self.omeIp = ome_ip;
+        self.omeIp = ome_ip
         self.uuid = uuid
         self.retry = 3
         self.base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ome_ip)
-        self.client = AuthenticatedClient(base_url=self.base_url, token=None, verify_ssl=False). \
+        self.client = AuthenticatedClient(base_url=self.base_url, token=None, timeout=20.0, verify_ssl=False). \
              with_headers(headers=self.headers)
 
     def validate_path(self, protocol, sharedpath):
@@ -52,15 +50,15 @@ class CreateRepo:
         self.shr_cred_obj = UNSET
         if shareCred is not None and shareCred != "":
             spcred = {}
-            creds = args['spcred'].split("|");
-            userName = creds[0];
-            pswd = creds[1];
+            creds = args['spcred'].split("|")
+            userName = creds[0]
+            pswd = creds[1]
             # spcred = {"username": userName.strip(), "password": pswd.strip()};
             self.shr_cred_obj = ShareCredential(userName.strip(),pswd.strip(),domain)
         self.create_repo_pro_obj = CreateRepositoryProfileRequest(profname,protocol_type.ProtocolType[protocolType],sharepath,desc,profile_type.ProfileType[profileType],checkCert,self.shr_cred_obj)
 
 
-    def create_repo_profile(self,):
+    def create_repo_profile(self):
         try:
 
             response: Response[Union[ErrorObject, int]] = create_repository_profile.sync_detailed(client=self.client,json_body=self.create_repo_pro_obj)
@@ -73,8 +71,8 @@ class CreateRepo:
                 time.sleep(5)
                 self.create_repo_profile()
             else:
-                print("Failed after 3 retries,exiting");
-                sys.exit();
+                print("Failed after 3 retries,exiting")
+                sys.exit()
         try:
             repo_id = int(response.parsed)
 
@@ -82,33 +80,29 @@ class CreateRepo:
             return response.parsed
         return "Repository created successfully with id "+str(repo_id)
 
-
-
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Python script using OME api to create Repository profile"
     );
-    parser.add_argument('-ip', help='OMEVV IP address', required=True);
-    parser.add_argument('-omevv_user', help='OMEVV username', required=True);
-    parser.add_argument('-omevv_pswd', help='OMEVV password', required=True);
-    parser.add_argument('-profilename', help='repository profile name', required=True);
-    parser.add_argument('-description', help='repository profile description', required=False);
-    parser.add_argument('-profileType', help='repository profile type', choices=['DRIVER', 'FIRMWARE'], required=True);
-    parser.add_argument('-sharepath', help='sharepath', required=True);
-    parser.add_argument('-spcred', help='sharepath credential', required=False);
+    parser.add_argument('-ip', help='OMEVV IP address', required=True)
+    parser.add_argument('-omevv_user', help='OMEVV username', required=True)
+    parser.add_argument('-omevv_pswd', help='OMEVV password', required=True)
+    parser.add_argument('-profilename', help='repository profile name', required=True)
+    parser.add_argument('-description', help='repository profile description', required=False)
+    parser.add_argument('-profileType', help='repository profile type', choices=['DRIVER', 'FIRMWARE'], required=True)
+    parser.add_argument('-sharepath', help='sharepath', required=True)
+    parser.add_argument('-spcred', help='sharepath credential', required=False)
     parser.add_argument('-protocol', help='protocol type', choices=['CIFS', 'NFS', 'HTTP', 'HTTPS', 'UNAVAILABLE'],
-                        required=True);
-    parser.add_argument('-certificateCheck', help='certificate check required?', required=False);
-    parser.add_argument('-uuid', help='UUID for authentication', required=True);
-    parser.add_argument('-domain', help='domain of share path', required=False);
+                        required=True)
+    parser.add_argument('-certificateCheck', help='certificate check required?', required=False)
+    parser.add_argument('-uuid', help='UUID for authentication', required=True)
+    parser.add_argument('-domain', help='domain of share path', required=False)
 
     args = vars(parser.parse_args())
-    ome_ip = args['ip'];
-    omevv_user_name = args['omevv_user'];
-    omevv_cred = args['omevv_pswd'];
-    uuid = args['uuid'];
+    ome_ip = args['ip']
+    omevv_user_name = args['omevv_user']
+    omevv_cred = args['omevv_pswd']
+    uuid = args['uuid']
 
     if args['protocol'] == "CIFS" and args['spcred'] == "":
         print('credential missing for sharedpath for CIFS protocol')
