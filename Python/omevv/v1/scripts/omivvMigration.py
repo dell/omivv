@@ -1,9 +1,7 @@
 import argparse
 import sys
-import csv
 import time
 import warnings
-from webbrowser import get
 from GetOMIVVProfileDetails import ProfileDetails
 from registerVcenter import RegisterVcenter
 from omevv_apis_client.models import Credential
@@ -12,7 +10,6 @@ from createBaselineProfile import CreateBaselineProfile
 from omevvServerManagement import HostsManagementWrapper
 from getManagementHostComplianceData import HostManagementComplianceWrapper
 from autoManageCompliantHosts import AutoManageCompliantHostsWrapper
-from utilities import Utilities
 
 from omevv_apis_client.api.group_management import get_groups_for_clusters
 from omevv_apis_client.models.get_group_for_cluster_request import GetGroupForClusterRequest
@@ -156,7 +153,7 @@ if __name__ == "__main__":
         for cluster in cluster_prof['clusters']:
             cluster_ids.append(cluster.id)
 
-    unregister_val = input("Confirm unregister vCenter (Y/N): ")
+    unregister_val = input("Confirm unregister vCenter from OMIVV (Y/N): ")
     if unregister_val == "Y":
         base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ome_ip)
         credential = Credential(username=ome_username, password=ome_password)
@@ -171,15 +168,15 @@ if __name__ == "__main__":
         success, uuid = registervcenterhelper.register_vcenter()
         if success == False:
             sys.exit()
-            print("unregister vCenter to proceed ahead")
+            print("Unregister vCenter from OMIVV to proceed ahead")
 
     else:
-        print("unregister vCenter to proceed ahead")
+        print("Unregister vCenter to from OMIVV proceed ahead")
         sys.exit()
 
-    discover_server = input("Discover Server Device (Y/N): ")
+    discover_server = input("Are the servers discovered in OME? (Y/N): ")
     if discover_server != "Y":
-        print("discover server device to proceed ahead")
+        print("Discover server devices in OME to proceed ahead")
         sys.exit()
 
     create_repo_obj = CreateRepo(ome_ip,console_username,console_pwd,uuid)
@@ -187,10 +184,10 @@ if __name__ == "__main__":
     create_repo_obj.create_payload((repo_data[0])['profileName'],(repo_data[0])["description"],(repo_data[0])["repoType"], \
                                    (repo_data[0])["uri"],(repo_data[0])["protocolType"],None,None,None)
     repo_output = create_repo_obj.create_repo_profile()
+    print(repo_output)
     if isinstance(repo_output, str):
-        repo_id = repo_output.partition("id ")[2]
+        repo_id = int(repo_output.partition("id ")[2])
     else:
-        print(repo_output)
         sys.exit()
 
     #find group id by cluster id
@@ -202,7 +199,7 @@ if __name__ == "__main__":
     group_ids = []
     for group_info in response_content:
         if group_info['clustId'] in cluster_ids:
-            group_ids.append(group_info['groupId'])
+            group_ids.append(int(group_info['groupId']))
 
     #auto manage hosts
     hostmgmtcompliancehelper = HostManagementComplianceWrapper()
@@ -224,6 +221,7 @@ if __name__ == "__main__":
         hostmgmthelper.run_manage_job()
 
     time.sleep(20)
+    
     #migrate baseline profile in OMEVV
     create_baseline_prof_obj = CreateBaselineProfile()
 
