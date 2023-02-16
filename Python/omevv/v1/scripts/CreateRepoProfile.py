@@ -50,9 +50,9 @@ class CreateRepo:
         self.shr_cred_obj = UNSET
         if shareCred is not None and shareCred != "":
             spcred = {}
-            creds = args['spcred'].split("|")
-            userName = creds[0]
-            pswd = creds[1]
+            creds = shareCred.split("|");
+            userName = creds[0];
+            pswd = creds[1];
             # spcred = {"username": userName.strip(), "password": pswd.strip()};
             self.shr_cred_obj = ShareCredential(userName.strip(),pswd.strip(),domain)
         self.create_repo_pro_obj = CreateRepositoryProfileRequest(profname,protocol_type.ProtocolType[protocolType],sharepath,desc,profile_type.ProfileType[profileType],checkCert,self.shr_cred_obj)
