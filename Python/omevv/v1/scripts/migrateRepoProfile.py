@@ -10,7 +10,7 @@ class MigrateRepoProfile:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Python script for limited migration from OMIVV to OMEVV"
+        description="Python script for migration of repository profiles from OMIVV to OMEVV"
     );
     
     parser.add_argument('-omivvip', help='OMIVV ip', required=True)
