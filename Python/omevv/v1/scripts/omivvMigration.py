@@ -45,6 +45,7 @@ class OmivvMigration:
                 return json.loads(response.content)
             else:
                 print(json.loads(response.content))
+                print("Migration Failed. Try managing the server and create baseline profile in OMEVV manually")
                 sys.exit()
 
         except Exception as e:
@@ -108,6 +109,8 @@ if __name__ == "__main__":
 
     except Exception as e:
         print("Exception occured ",e)
+        print("Migration Failed. Not able to retrieve vCenter details registered with OMIVV. Make sure all the services are up and running")
+        sys.exit()
 
     try:
         repoList = profile_obj.get_repoprof_details(console_ip, console_hostname, console_username, console_domain,
@@ -127,6 +130,8 @@ if __name__ == "__main__":
 
     except Exception as e:
         print("Exception occurred ", e)
+        print("Migration Failed. Not able to retrieve repository profile details from OMIVV. Make sure all the services are up and running")
+        sys.exit()
 
     try:
         cluster_pro_list = profile_obj.get_cluster_pro_details(console_ip, console_hostname, console_username,
@@ -145,6 +150,8 @@ if __name__ == "__main__":
                       } for each in cluster_prof_data]
     except Exception as e:
         print("Exception occurred ", e)
+        print("Migration Failed. Not able to retrieve cluster profile details from OMIVV. Make sure all the services are up and running")
+        sys.exit()
    
     profile_obj.logout(bearer_token)
   
@@ -167,11 +174,11 @@ if __name__ == "__main__":
                                              vcpassword=console_pwd, console_address=console_ip, description=None, extensions=extensions)
         success, uuid = registervcenterhelper.register_vcenter()
         if success == False:
-            sys.exit()
-            print("Unregister vCenter from OMIVV to proceed ahead")
+        	print("Migration Failed. Try registering vCenter with OMEVV manually")
+        	sys.exit()
 
     else:
-        print("Unregister vCenter to from OMIVV proceed ahead")
+        print("Unregister vCenter from OMIVV to proceed ahead")
         sys.exit()
 
     discover_server = input("Are the servers discovered in OME? (Y/N): ")
@@ -188,7 +195,8 @@ if __name__ == "__main__":
     if isinstance(repo_output, str):
         repo_id = int(repo_output.partition("id ")[2])
     else:
-        sys.exit()
+    	print("Migration Failed. Try creating the repository profile in OMEVV manually")
+    	sys.exit()
 
     #find group id by cluster id
     base_url = 'https://{ip}/omevv/GatewayService/v1/'.format(ip=ome_ip)
@@ -211,6 +219,9 @@ if __name__ == "__main__":
         success,response = hostmgmtcompliancehelper.get_managed_hosts_compliance()
         if success:
             manage_host_ids = automanagecomplianthosthelper.getHostIds(response)
+        else:
+        	print("Migration Failed. Try managing the server in OMEVV manually")
+        	sys.exit()
 
     if len(manage_host_ids) > 0:
         jobname = f"API ManageJob-{time.ctime()}"
@@ -218,7 +229,16 @@ if __name__ == "__main__":
         hostmgmthelper.create_payload(base_url=base_url, omeIp=ome_ip, vcUsercredential=credential, \
                                             vCenterUUID=uuid, payload={}, jobname=jobname, \
                                             jobdescription=None, host_ids=manage_host_ids)
-        hostmgmthelper.run_manage_job()
+        ismanaged = hostmgmthelper.run_manage_job()
+        try:	
+        	if isinstance(ismanaged, str):
+        		manage_job_id = int(ismanaged.partition("id ")[2])
+        	else:
+        		print("Migration Failed. Try managing the server in OMEVV manually")
+        		sys.exit()
+        except Exception as exception:
+        	print("Migration Failed. Try managing the server in OMEVV manually")
+        	sys.exit()
 
     time.sleep(20)
     
