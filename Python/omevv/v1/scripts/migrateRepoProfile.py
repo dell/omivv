@@ -23,7 +23,7 @@ if __name__ == "__main__":
     parser.add_argument('-omivvconsolepwd', help='console password', required=True)
     parser.add_argument('-omivvconsoledomain', help='console domain', required=False,default ="")
     parser.add_argument('-omeip', help='ome appliance ip', required=True)
-    parser.add_argument("-omevvuuid", help="uuid for omevv migration", required=True)
+    parser.add_argument("-omevvconsoleuuid", help="uuid for omevv migration", required=True)
     parser.add_argument("-omevvconsoleusername", help="omevv console username", required=True)
     parser.add_argument("-omevvconsolepwd", help="omevv console password", required=True)
 
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     console_ip = args['omivvconsoleip']
     console_hostname = args['omivvconsolename']
     ome_ip = args['omeip']
-    omevv_uuid = args['omevvuuid']
+    omevv_console_uuid = args['omevvconsoleuuid']
     omevv_console_username = args['omevvconsoleusername']
     omevv_console_pwd = args['omevvconsolepwd']
 
@@ -65,13 +65,21 @@ if __name__ == "__main__":
 
     except Exception as e:
         print("Exception occurred ", e)
+        print("Migration Failed. Not able to retrieve repository profile details from OMIVV. Make sure all the services are up and running")
+        profile_obj.logout(bearer_token)
+        sys.exit()
   
+    if len(repoList) == 0:
+        print("Migration Failed. Not able to retrieve repository profile details from OMIVV. Make sure all the services are up and running")
+        profile_obj.logout(bearer_token)
+        sys.exit()
+
     profile_obj.logout(bearer_token)
 
-    create_repo_obj = CreateRepo(ome_ip,omevv_console_username,omevv_console_pwd,omevv_uuid)
+    create_repo_obj = CreateRepo(ome_ip,omevv_console_username,omevv_console_pwd,omevv_console_uuid)
 
     for repository in repo_data:
-        if repository["profileName"] == 'Dell Default Catalog' or repository["profileName"] == 'Validated MX stack Catalog':
+        if repository["profileName"] == 'Dell Default Catalog' or repository["profileName"] == 'Validated MX stack Catalog' or repository["repoType"].upper() == 'DRIVER':
             continue
         
         elif repository["protocolType"] != 'NFS':
