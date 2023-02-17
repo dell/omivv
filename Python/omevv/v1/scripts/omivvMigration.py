@@ -56,6 +56,7 @@ class OmivvMigration:
                 self.fetch_groups_for_clusters()
             else:
                 print("Failed after 3 retries,exiting")
+                print("Migration Failed. Try managing the server and create baseline profile in OMEVV manually")
                 sys.exit()
 
 if __name__ == "__main__":
@@ -110,7 +111,13 @@ if __name__ == "__main__":
     except Exception as e:
         print("Exception occured ",e)
         print("Migration Failed. Not able to retrieve vCenter details registered with OMIVV. Make sure all the services are up and running")
+        profile_obj.logout(bearer_token)
         sys.exit()
+
+    if len(console_list) == 0:
+    	print("Migration Failed. Not able to retrieve vCenter details registered with OMIVV. Make sure all the services are up and running")
+    	profile_obj.logout(bearer_token)
+    	sys.exit()
 
     try:
         repoList = profile_obj.get_repoprof_details(console_ip, console_hostname, console_username, console_domain,
@@ -131,7 +138,13 @@ if __name__ == "__main__":
     except Exception as e:
         print("Exception occurred ", e)
         print("Migration Failed. Not able to retrieve repository profile details from OMIVV. Make sure all the services are up and running")
+        profile_obj.logout(bearer_token)
         sys.exit()
+
+    if len(repoList) == 0:
+    	print("Migration Failed. Not able to retrieve repository profile details from OMIVV. Make sure all the services are up and running")
+    	profile_obj.logout(bearer_token)
+    	sys.exit()
 
     try:
         cluster_pro_list = profile_obj.get_cluster_pro_details(console_ip, console_hostname, console_username,
@@ -151,8 +164,14 @@ if __name__ == "__main__":
     except Exception as e:
         print("Exception occurred ", e)
         print("Migration Failed. Not able to retrieve cluster profile details from OMIVV. Make sure all the services are up and running")
+        profile_obj.logout(bearer_token)
         sys.exit()
-   
+
+    if len(cluster_pro_list) == 0:
+    	print("Migration Failed. Not able to retrieve cluster profile details from OMIVV. Make sure all the services are up and running")
+    	profile_obj.logout(bearer_token)
+    	sys.exit()
+
     profile_obj.logout(bearer_token)
   
     cluster_ids = []
