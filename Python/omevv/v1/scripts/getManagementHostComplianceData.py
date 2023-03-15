@@ -39,7 +39,7 @@ class HostManagementComplianceWrapper:
 
     def get_managed_hosts_compliance(self) -> Tuple[bool,object]:
         global retry
-        try: 
+        try:
             response: Response[Union[ErrorObject, List[HostCompliance]]] = \
                 get_host_compliance.sync_detailed(uuid=self.uuid, client=self.client)
 
@@ -66,9 +66,9 @@ class HostManagementComplianceWrapper:
 
             else:
                 print("Failed after 3 retries,exiting");
-                sys.exit();
+                return False,e
 
-        return response.parsed
+        return False,''
 
 if __name__ == "__main__":
     PARSER = argparse.ArgumentParser(description=__doc__,
