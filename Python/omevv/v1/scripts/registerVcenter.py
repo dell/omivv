@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Tuple
 import argparse
 import warnings
 from omevv_apis_client import AuthenticatedClient
@@ -53,7 +53,7 @@ class RegisterVcenter:
                 
         self.json_body = ConsoleCreateRequest(extensions=self.consoleProviderTypeList, credential=self.vccredential, console_address=self.console_address, description=self.description)
  
-    def register_vcenter(self):        
+    def register_vcenter(self) -> Tuple[bool,object]:        
         global retry
         try:
             response: Response[Union[Console, ErrorObject]] = \
@@ -61,9 +61,12 @@ class RegisterVcenter:
             
             if response.status_code == 201:
                 print("vCenter registered successfully for the given extensions")
-            
-            print(json.loads(response.content))        
-
+                print(json.loads(response.content))
+                return (True, json.loads(response.content)['uuid'])
+            else:
+                print(json.loads(response.content))
+                return (False, json.loads(response.content)['message'])
+    
         except Exception as e:
             print("Exception occured while registering vCenter ",e," retrying ..");
             if retry > 0:
@@ -94,7 +97,7 @@ if __name__ == "__main__":
             credential = Credential(username=ARGS.omeusername, password=ARGS.omepassword)
             registervcenterhelper = RegisterVcenter()
             registervcenterhelper.create_payload(base_url=base_url, omeIp=ARGS.ip, omeUsercredential=credential, vcusername=ARGS.vcusername, vcpassword=ARGS.vcpassword, console_address=ARGS.console_address, description=ARGS.description, extensions=ARGS.extensions)
-            registervcenterhelper.register_vcenter()
+            success, obj = registervcenterhelper.register_vcenter()
         else:
             print("Invalid input. Extensions parameter should be a list") 
     else:
