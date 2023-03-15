@@ -2,7 +2,7 @@
 # LicenseImport. Python script using Redfish API with OEM extension to perform import of iDRAC OMEA license(s).
 #
 # _author_ = Ramya.R <Ramya.R@Dell.com>
-# _version_ = 1.0
+# _version_ = 1.1
 #
 # Copyright (c) 2023 Dell EMC Corporation
 #
@@ -24,30 +24,76 @@ Description: LicenseImport. Python script using Redfish API with OEM extension t
 script_examples:
 
 1. this example will import iDRAC OMEA license from NFS share
-    python LicenseImport.py -ip 192.168.0.120 -u root -p calvin -ipaddress 192.168.0.130 -sharetype NFS -sharename /nfs -username <share username> -password <share password> -licensefilename iDRAC_OMEA_license.xml -retry 2
+    python LicenseImport.py -ip 192.168.0.120 -u root -p calvin -shareip 192.168.0.130 -sharetype NFS -sharename /nfs -shareuname <share username> -sharepassword <share password> -licensefilename iDRAC_OMEA_license.xml -retry 2
 
 2. To view the help menu for list of args to be passed:
     python LicenseImport.py -h
 
 '''
 
-import requests, json, sys, re, time, os, warnings, argparse
+import requests, json, sys, time, warnings, argparse
 
 from datetime import datetime
 
 warnings.filterwarnings("ignore")
 import base64
-
+import constants
+import dpath.util
 
 class LicenseImport:
     def __init__(self):
 
         self.headers = {'content-type': 'application/json'}
-
+        self.manager_uri=constants.manager_uri
         self.job_id = ""
-        self.licenseimporturl = "/redfish/v1/Managers/iDRAC.Embedded.1/Oem/Dell/DellLicenseManagementService/Actions/DellLicenseManagementService.ImportLicenseFromNetworkShare"
 
         self.payload = {}
+
+    def check_supported_idrac_version(self, idrac_ip, idrac_username, idrac_password,retry):
+        self.idrac_ip = idrac_ip
+        self.idrac_uname = idrac_username
+        self.idrac_pwd = idrac_password
+        self.config_url = "https://" + self.idrac_ip
+        msg=''
+        try:
+            flag = False
+
+            credential = idrac_username + ":" + idrac_password
+            self.encoded_idrac_cred = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
+            self.headers["Authorization"] = self.encoded_idrac_cred
+
+            response = requests.get(url=self.config_url + self.manager_uri, headers=self.headers, verify=False)
+            data = response.json()
+
+            licensemanagementservice_uri = dpath.util.get(data, "Links/Oem/Dell/DellLicenseManagementService/@odata.id",default=None)
+            if response.status_code != 200 or not(licensemanagementservice_uri):
+                msg = f"\n- FAIL,Check to validate support for DellLicenseManagementService failed. status code {response.status_code} detected,Error:\n{data}"
+                return flag, msg
+
+            # <-----check for the Licensemanagement service>ImportLicenseFromNetworkShare ---->
+            response = requests.get(url=self.config_url+licensemanagementservice_uri, verify=False,headers=self.headers)
+            data = response.json()
+
+            self.licenseimporturl = dpath.util.get(data,"Actions/#DellLicenseManagementService.ImportLicenseFromNetworkShare/target",default=None)
+
+            if response.status_code != 200 or not(self.licenseimporturl):
+                msg = f"\n- FAIL, Check to validate support for DellLicenseManagementService>ImportLicenseFromNetworkShare failed,status code {response.status_code} returned. Error:\n{data}"
+                return flag, msg
+
+            msg = f"\n- Success, Check to validate support for DellLicenseManagementService>ImportLicenseFromNetworkShare is successful, status code {response.status_code} returned."
+            flag = True
+            return flag, msg
+
+        except Exception as e:
+            flag = False
+            print("-FAIL, Exception occured - %s" % (e))
+            if retry > 0:
+                retry = retry - 1
+                time.sleep(5)
+                self.check_supported_idrac_version(idrac_ip=idrac_ip, idrac_username=idrac_username, idrac_password=idrac_password,retry=retry)
+                msg = "-FAIL, Exception occured - %s" % (e)
+            return flag, msg
+
 
     def create_payload(self, licensename, shareip, sharetype, sharename, shareuname=None, sharepwd=None, workgroup=None,
                        ignorecertwarning=False,retry=3):
@@ -114,15 +160,7 @@ class LicenseImport:
 
     def import_idrac_license_network_share(self,idrac_ip, idrac_uname, idrac_pwd,payload, retry=3):
 
-        self.idrac_ip = idrac_ip
-        self.idrac_uname = idrac_uname
-        self.idrac_pwd = idrac_pwd
-        self.config_url = "https://" + self.idrac_ip
-
         try:
-            credential = idrac_uname + ":" + idrac_pwd
-            self.encoded_idrac_cred = "Basic %s" % base64.b64encode(credential.encode('utf-8')).decode()
-            self.headers["Authorization"] = self.encoded_idrac_cred
 
             method = "ImportLicenseFromNetworkShare"
 
@@ -177,13 +215,13 @@ if __name__ == "__main__":
     parser.add_argument('-sharetype',
                         help='Pass in the share type of the network share to import iDRAC license,supported values:CIFS/NFS/HTTP/HTTPS',
                         required=True)
-    parser.add_argument('-ipaddress', help='Pass in the IP address of the network share to import iDRAC license',
+    parser.add_argument('-shareip', help='Pass in the IP address of the network share to import iDRAC license',
                         required=True)
-    parser.add_argument('-sharename', help='Pass in the network share name for export / import iDRAC license',
+    parser.add_argument('-sharename', help='Pass in the network share name to import iDRAC license',
                         required=True)
-    parser.add_argument('-username', help='Pass in the network share username',
+    parser.add_argument('-shareuname', help='Pass in the network share username',
                         required=False)
-    parser.add_argument('-password', help='Pass in the network share username password',
+    parser.add_argument('-sharepassword', help='Pass in the network share password',
                         required=False)
     parser.add_argument('-workgroup',
                         help='Pass in the workgroup of your CIFS network share. This argument is optional',
@@ -192,7 +230,7 @@ if __name__ == "__main__":
                         help='Supported values are On and Off. This argument is only required if using HTTPS for share type',
                         required=False)
     parser.add_argument('-licensefilename',
-                        help='Pass in name of the license file on the network share you want to import',
+                        help='Pass in name of the license file available in the network share you want to import',
                         required=True)
     parser.add_argument('-retry',
                         help='Pass in the number of times the command needs to be re-tried in case of exception. The default value is retry=3',
@@ -201,9 +239,18 @@ if __name__ == "__main__":
 
     licenseobj = LicenseImport()
 
-    payload = licenseobj.create_payload(licensename=args["licensefilename"], shareip=args["ipaddress"],
+    #Check if the method is supported for the current idrac version
+    flag,msg=licenseobj.check_supported_idrac_version(idrac_ip=args["ip"],idrac_username=args["u"],idrac_password=args["p"],retry=args["retry"])
+    print(msg)
+
+    if not(flag):
+        sys.exit()
+
+    print(msg)
+
+    payload = licenseobj.create_payload(licensename=args["licensefilename"], shareip=args["shareip"],
                                         sharetype=args["sharetype"],
-                                        shareuname=args["username"], sharepwd=args["password"],
+                                        shareuname=args["shareuname"], sharepwd=args["sharepassword"],
                                         workgroup=args["workgroup"],
                                         ignorecertwarning=args["ignorecertwarning"], sharename=args["sharename"],retry=args["retry"])
 
