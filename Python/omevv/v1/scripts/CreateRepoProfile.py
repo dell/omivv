@@ -50,7 +50,7 @@ class CreateRepo:
         self.shr_cred_obj = UNSET
         if shareCred is not None and shareCred != "":
             spcred = {}
-            creds = args['spcred'].split("|")
+            creds = shareCred.split("|")
             userName = creds[0]
             pswd = creds[1]
             # spcred = {"username": userName.strip(), "password": pswd.strip()};
